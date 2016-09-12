@@ -75,6 +75,7 @@ let accessor =
         match name with
         | "i1" -> 1
         | "i2" -> rnd.Next ()
+        | _ -> -5
       member __.GetBoolean _ = false
       member __.GetString _ = "text"
       member __.GetDecimal _ = 2m }
@@ -87,5 +88,5 @@ let del =
     typecheck "IF((i1+i1+i2+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1)>0 ; 'A', 'B')" 
     |> unwrap
     |> Emitter.generateMethod<string> funs refs
-del.Invoke accessor
+del.Invoke accessor |> ignore
 

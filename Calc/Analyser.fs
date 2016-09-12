@@ -25,14 +25,14 @@ let operatorPrecedence =
       Minus, 15
       Multiply, 20
       Divide, 20
-      Power, 30
+      //Power, 30
       Equals, 0
       Greater, 0
       Less, 0
-      GreaterOrEqual, 0
-      LessOrEqual, 0
-      NotEqual, 0 ]
-    |> Map.ofList
+      //GreaterOrEqual, 0
+      //LessOrEqual, 0
+      //NotEqual, 0 
+    ] |> Map.ofList
 
 let rec applyOperatorPrecedence expr = 
     match expr with

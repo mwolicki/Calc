@@ -63,16 +63,14 @@ let generateMethod<'a> (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) ((e
     let (|IsSimpleOperation|_|) = function
     | OperatorCall (op, lhs, rhs) ->
         match op with
-        | Tokenizer.operator.Plus -> Some OpCodes.Add
-        | Tokenizer.operator.Minus -> Some OpCodes.Sub
-        | Tokenizer.operator.Divide -> Some OpCodes.Div
-        | Tokenizer.operator.Multiply -> Some OpCodes.Mul
-        | Tokenizer.operator.Equals -> Some OpCodes.Ceq
-        | Tokenizer.operator.Greater -> Some OpCodes.Cgt
-        | Tokenizer.operator.Less -> Some OpCodes.Clt
-        //| Tokenizer.operator.Power -> 
-        | _ -> None
-        |> Option.map(fun x->x, lhs, rhs)
+        | Tokenizer.operator.Plus -> OpCodes.Add
+        | Tokenizer.operator.Minus -> OpCodes.Sub
+        | Tokenizer.operator.Divide -> OpCodes.Div
+        | Tokenizer.operator.Multiply -> OpCodes.Mul
+        | Tokenizer.operator.Equals -> OpCodes.Ceq
+        | Tokenizer.operator.Greater -> OpCodes.Cgt
+        | Tokenizer.operator.Less -> OpCodes.Clt
+        |> fun x-> Some(x, lhs, rhs)
     | _ -> None
 
     let rec ilBuild (il:ILGenerator) (expr:Expr) = 

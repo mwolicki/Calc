@@ -48,8 +48,8 @@ let rec getExprType(fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) =
     | ConstStr _ -> OK String
     | OperatorCall (op, lhs, _) ->
         match op with
-        |Plus | Minus | Multiply | Divide | Power -> getExprType fs refs lhs
-        |Equals | Greater | Less | GreaterOrEqual | LessOrEqual | NotEqual -> OK Boolean
+        |Plus | Minus | Multiply | Divide (*| Power*) -> getExprType fs refs lhs
+        |Equals | Greater | Less (*| GreaterOrEqual | LessOrEqual | NotEqual*) -> OK Boolean
     | Reference refName ->
         match refs.TryFind refName with
         | Some def -> OK def.Type
@@ -88,8 +88,10 @@ let check (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr =
                 let psTypes = ps |> List.map check'
                 let types, errors = psTypes |> List.partition (function OK _ -> true | _ -> false)
                 if errors.Length > 0 then
-                    let (Error txt) = errors |> List.head
-                    Error txt
+                    errors 
+                    |> List.head
+                    |> unwrapError
+                    |> Error
                 else
                     let types = types |> List.choose (function OK x->Some x | _ -> None)
                     let errors = 
