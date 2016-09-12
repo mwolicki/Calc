@@ -67,6 +67,17 @@ let refs =
     |> List.map (fun x-> x.Name, x)
     |> Map.ofList
 
+let rnd = new System.Random()
+
+let accessor = 
+    { new IReferenceAccessor with
+      member __.GetInt name = 
+        match name with
+        | "i1" -> 1
+        | "i2" -> rnd.Next ()
+      member __.GetBoolean _ = false
+      member __.GetString _ = "text"
+      member __.GetDecimal _ = 2m }
 
 let analyse = Tokenizer.tokenize >> Analyse.analyse
 
@@ -79,6 +90,9 @@ typecheck "true = false"
 typecheck "IF(i1+i2>0 ; COS(i2); 1 + i2^2 * 2^2)"
 
 
-let del = typecheck "(10-4*0+3/3)" |> unwrap |> Emitter.generateMethod<int>
-del.Invoke()
+let del = 
+    typecheck "i2 + i1" 
+    |> unwrap
+    |> Emitter.generateMethod<int> funs refs
+del.Invoke accessor
 

@@ -2,6 +2,7 @@
 open Analyse
 open System.Reflection
 open System.Reflection.Emit
+open Calc.Lib
 open TypeChecker
 
 
@@ -45,7 +46,7 @@ let rec getType = function
     | String -> typeof<string>
     | Unit -> typeof<System.Void>
 
-let generateMethod<'a> ((expr, t):Expr * Type) =
+let generateMethod<'a> (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) ((expr, t):Expr * Type) =
     let (|IsSimpleOperation|_|) = function
     | OperatorCall (op, lhs, rhs) ->
         (match op with
@@ -62,8 +63,8 @@ let generateMethod<'a> ((expr, t):Expr * Type) =
 
     let rec ilBuild (il:ILGenerator) (expr:Expr) = 
         match expr with
-        | ConstBool true -> il.Emit(OpCodes.Ldc_I4_1)
-        | ConstBool false -> il.Emit(OpCodes.Ldc_I4_0)
+        | ConstBool true -> il.Emit OpCodes.Ldc_I4_1
+        | ConstBool false -> il.Emit OpCodes.Ldc_I4_0
         | ConstNum (Tokenizer.number.Integer v) ->
             il.Emit(OpCodes.Ldc_I4, v)
             printfn "%A %i (%A)" OpCodes.Ldc_I4 v expr
@@ -74,16 +75,28 @@ let generateMethod<'a> ((expr, t):Expr * Type) =
             ilBuild il rhs
             il.Emit opCode
             printfn "%A (%A)" opCode expr
+        | Reference name -> 
+            il.Emit(OpCodes.Ldarg_0)
+            let def = refs.[name]
+            let methodInfo = 
+                match def.Type with
+                | String -> "GetString"
+                | Integer -> "GetInt"
+                | Decimal -> "GetDecimal"
+                | Boolean -> "GetBoolean"
+                | x -> failwithf "Not supported yet type (%A) of reference" x
+                |> typeof<IReferenceAccessor>.GetMethod
+            il.Emit(OpCodes.Ldstr, name)
+            il.EmitCall(OpCodes.Callvirt, methodInfo, null)
         | OperatorCall _
         | FunctionCall _
         | ConstNum _ 
-        | Reference _ 
             -> failwithf "Unsupported expression %A" expr
 
     let name = Numbers.getMethodNumber() |> sprintf "method-%i" 
-    let methodBuilder = DynamicMethod(name, getType t, null)
+    let methodBuilder = DynamicMethod(name, getType t, [|typeof<IReferenceAccessor>|])
     let il = methodBuilder.GetILGenerator()
     ilBuild il expr
     il.Emit(OpCodes.Ret)
-    methodBuilder.CreateDelegate(typeof<System.Func<'a>>) :?> System.Func<'a>
+    methodBuilder.CreateDelegate(typeof<System.Func<IReferenceAccessor, 'a>>) :?> System.Func<IReferenceAccessor, 'a>
 

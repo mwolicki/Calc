@@ -1,20 +1,26 @@
-﻿module Lib
+﻿namespace Calc.Lib
 
-open Calc.Lib
-open System
+type IReferenceAccessor =
+    abstract member GetInt : string -> int
+    abstract member GetString : string -> string
+    abstract member GetBoolean : string -> bool
+    abstract member GetDecimal : string -> decimal
 
-[<Export("IF")>]
-let ifFunc x (a:string) b = if x then a else b
+module Lib = 
+    open System
 
-[<Export("PRINT")>]
-let print a = printfn "%s" a
+    [<Export("IF")>]
+    let ifFunc x (a:string) b = if x then a else b
 
-[<Export("COS")>]
-let cos = Math.Cos
+    [<Export("PRINT")>]
+    let print a = printfn "%s" a
 
-[<Export("SIN")>]
-let sin = Math.Sin
+    [<Export("COS")>]
+    let cos = Math.Cos
 
-[<Export("STARTSWITH")>]
-let startsWith (s:string) (pattern:string) = s.StartsWith (pattern, StringComparison.InvariantCulture) 
+    [<Export("SIN")>]
+    let sin = Math.Sin
+
+    [<Export("STARTSWITH")>]
+    let startsWith (s:string) (pattern:string) = s.StartsWith (pattern, StringComparison.InvariantCulture) 
 
