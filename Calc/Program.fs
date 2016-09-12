@@ -46,7 +46,7 @@ let getAllFunctions (asm:Assembly) =
     |> Array.map (fun x->x, x.GetCustomAttribute(typeof<ExportAttribute>))
     |> Array.filter (snd >> isNotNull)
     |> Array.map (fun (f, att) -> (att :?> ExportAttribute).Name, f)
-    |> Array.map (fun (name, f)-> { Name = name; ReturnType = getReturnType f; Parameters = getParamsTypes f}, f)
+    |> Array.map (fun (name, f)-> { Name = name; ReturnType = getReturnType f; Parameters = getParamsTypes f; MethodInfo = f}, f)
 
 
 let funs =
@@ -91,8 +91,8 @@ typecheck "IF(i1+i2>0 ; COS(i2); 1 + i2^2 * 2^2)"
 
 
 let del = 
-    typecheck "d1" 
+    typecheck "IF(i1+i2<0 ; 'A'; 'B')" 
     |> unwrap
-    |> Emitter.generateMethod<decimal> funs refs
+    |> Emitter.generateMethod<string> funs refs
 del.Invoke accessor
 

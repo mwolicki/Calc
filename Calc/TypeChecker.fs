@@ -19,7 +19,8 @@ type RefDef =
 type FunDef = 
     { Name : FunName
       ReturnType : Type
-      Parameters : Type list }
+      Parameters : Type list
+      MethodInfo : System.Reflection.MethodInfo }
 
 let rec areCompatibleTypes actual expected = 
     match actual, expected with

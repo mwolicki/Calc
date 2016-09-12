@@ -109,9 +109,11 @@ let generateMethod<'a> (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) ((e
                 |> typeof<IReferenceAccessor>.GetMethod
             il.Emit(OpCodes.Ldstr, name)
             il.EmitCall(OpCodes.Callvirt, methodInfo, null)
+        | FunctionCall (name, params') -> 
+            params' |> List.iter ilBuild
+            let def = fs.[name]
+            il.EmitCall(OpCodes.Call, def.MethodInfo, null)
         | OperatorCall _
-        | FunctionCall _
-        | ConstNum _ 
             -> failwithf "Unsupported expression %A" expr
 
     let name = Numbers.getMethodNumber() |> sprintf "method-%i" 
