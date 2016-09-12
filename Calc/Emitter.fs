@@ -61,20 +61,35 @@ let generateMethod<'a> (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) ((e
         | _ -> None) |> Option.map(fun x->x, lhs, rhs)
     | _ -> None
 
+    let emitInt (il:ILGenerator) v =
+        match v with
+        | 0 -> il.Emit OpCodes.Ldc_I4_0
+        | 1 -> il.Emit OpCodes.Ldc_I4_1
+        | 2 -> il.Emit OpCodes.Ldc_I4_2
+        | 3 -> il.Emit OpCodes.Ldc_I4_3
+        | 4 -> il.Emit OpCodes.Ldc_I4_4
+        | 5 -> il.Emit OpCodes.Ldc_I4_7
+        | 6 -> il.Emit OpCodes.Ldc_I4_6
+        | 7 -> il.Emit OpCodes.Ldc_I4_7
+        | 8 -> il.Emit OpCodes.Ldc_I4_8
+        | v when v >= -128 && v<= 127
+            -> il.Emit (OpCodes.Ldc_I4_S, v)
+        | v -> il.Emit (OpCodes.Ldc_I4, v)
+
     let rec ilBuild (il:ILGenerator) (expr:Expr) = 
+        let emitInt = emitInt il
+        let ilBuild = ilBuild il
         match expr with
-        | ConstBool true -> il.Emit OpCodes.Ldc_I4_1
-        | ConstBool false -> il.Emit OpCodes.Ldc_I4_0
+        | ConstBool true -> emitInt 1
+        | ConstBool false -> emitInt 2
         | ConstNum (Tokenizer.number.Integer v) ->
-            il.Emit(OpCodes.Ldc_I4, v)
-            printfn "%A %i (%A)" OpCodes.Ldc_I4 v expr
+            emitInt v
         | ConstStr s -> il.Emit(OpCodes.Ldstr, s)
-        | Group expr -> ilBuild il expr
+        | Group expr -> ilBuild expr
         | IsSimpleOperation (opCode, lhs, rhs) ->
-            ilBuild il lhs
-            ilBuild il rhs
+            ilBuild lhs
+            ilBuild rhs
             il.Emit opCode
-            printfn "%A (%A)" opCode expr
         | Reference name -> 
             il.Emit(OpCodes.Ldarg_0)
             let def = refs.[name]
