@@ -83,15 +83,8 @@ let analyse = Tokenizer.tokenize >> Analyse.analyse
 
 let typecheck = Tokenizer.tokenize >> Analyse.analyse >> (TypeChecker.check funs refs)
 
-Tokenizer.tokenize "true=false"
-Tokenizer.tokenize "((``ala ma kota``aaa,;  1 + 23.45 ``123``'' 'sdakjasdkas' TRUE )) <> ><=="
-
-typecheck "true = false" 
-typecheck "IF(i1+i2>0 ; COS(i2); 1 + i2^2 * 2^2)"
-
-
 let del = 
-    typecheck "IF(i1+i2<0 ; 'A'; 'B')" 
+    typecheck "IF((i1+i1+i2+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1)>0 ; 'A', 'B')" 
     |> unwrap
     |> Emitter.generateMethod<string> funs refs
 del.Invoke accessor

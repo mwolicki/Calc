@@ -45,10 +45,24 @@ let rec getType = function
     | String -> typeof<string>
     | Unit -> typeof<System.Void>
 
+let emitInt (il:ILGenerator) = function
+    | 0 -> il.Emit OpCodes.Ldc_I4_0
+    | 1 -> il.Emit OpCodes.Ldc_I4_1
+    | 2 -> il.Emit OpCodes.Ldc_I4_2
+    | 3 -> il.Emit OpCodes.Ldc_I4_3
+    | 4 -> il.Emit OpCodes.Ldc_I4_4
+    | 5 -> il.Emit OpCodes.Ldc_I4_7
+    | 6 -> il.Emit OpCodes.Ldc_I4_6
+    | 7 -> il.Emit OpCodes.Ldc_I4_7
+    | 8 -> il.Emit OpCodes.Ldc_I4_8
+    | v when v >= -128 && v<= 127
+        -> il.Emit (OpCodes.Ldc_I4_S, v)
+    | v -> il.Emit (OpCodes.Ldc_I4, v)
+
 let generateMethod<'a> (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) ((expr, t):Expr * Type) =
     let (|IsSimpleOperation|_|) = function
     | OperatorCall (op, lhs, rhs) ->
-        (match op with
+        match op with
         | Tokenizer.operator.Plus -> Some OpCodes.Add
         | Tokenizer.operator.Minus -> Some OpCodes.Sub
         | Tokenizer.operator.Divide -> Some OpCodes.Div
@@ -57,23 +71,9 @@ let generateMethod<'a> (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) ((e
         | Tokenizer.operator.Greater -> Some OpCodes.Cgt
         | Tokenizer.operator.Less -> Some OpCodes.Clt
         //| Tokenizer.operator.Power -> 
-        | _ -> None) |> Option.map(fun x->x, lhs, rhs)
+        | _ -> None
+        |> Option.map(fun x->x, lhs, rhs)
     | _ -> None
-
-    let emitInt (il:ILGenerator) v =
-        match v with
-        | 0 -> il.Emit OpCodes.Ldc_I4_0
-        | 1 -> il.Emit OpCodes.Ldc_I4_1
-        | 2 -> il.Emit OpCodes.Ldc_I4_2
-        | 3 -> il.Emit OpCodes.Ldc_I4_3
-        | 4 -> il.Emit OpCodes.Ldc_I4_4
-        | 5 -> il.Emit OpCodes.Ldc_I4_7
-        | 6 -> il.Emit OpCodes.Ldc_I4_6
-        | 7 -> il.Emit OpCodes.Ldc_I4_7
-        | 8 -> il.Emit OpCodes.Ldc_I4_8
-        | v when v >= -128 && v<= 127
-            -> il.Emit (OpCodes.Ldc_I4_S, v)
-        | v -> il.Emit (OpCodes.Ldc_I4, v)
 
     let rec ilBuild (il:ILGenerator) (expr:Expr) = 
         let emitInt = emitInt il
@@ -97,22 +97,20 @@ let generateMethod<'a> (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) ((e
             ilBuild rhs
             il.Emit opCode
         | Reference name -> 
-            il.Emit(OpCodes.Ldarg_0)
-            let def = refs.[name]
             let methodInfo = 
-                match def.Type with
+                match refs.[name].Type with
                 | String -> "GetString"
                 | Integer -> "GetInt"
                 | Decimal -> "GetDecimal"
                 | Boolean -> "GetBoolean"
                 | x -> failwithf "Not supported yet type (%A) of reference" x
                 |> typeof<IReferenceAccessor>.GetMethod
+            il.Emit OpCodes.Ldarg_0
             il.Emit(OpCodes.Ldstr, name)
             il.EmitCall(OpCodes.Callvirt, methodInfo, null)
         | FunctionCall (name, params') -> 
             params' |> List.iter ilBuild
-            let def = fs.[name]
-            il.EmitCall(OpCodes.Call, def.MethodInfo, null)
+            il.EmitCall(OpCodes.Call, fs.[name].MethodInfo, null)
         | OperatorCall _
             -> failwithf "Unsupported expression %A" expr
 
@@ -120,6 +118,6 @@ let generateMethod<'a> (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) ((e
     let methodBuilder = DynamicMethod(name, getType t, [|typeof<IReferenceAccessor>|])
     let il = methodBuilder.GetILGenerator()
     ilBuild il expr
-    il.Emit(OpCodes.Ret)
+    il.Emit OpCodes.Ret
     methodBuilder.CreateDelegate(typeof<System.Func<IReferenceAccessor, 'a>>) :?> System.Func<IReferenceAccessor, 'a>
 

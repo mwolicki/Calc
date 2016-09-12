@@ -13,7 +13,7 @@ module Lib =
     let ifFunc x (a:string) b = if x then a else b
 
     [<Export("PRINT")>]
-    let print a = printfn "%s" a
+    let print a= printfn "%s" a
 
     [<Export("COS")>]
     let cos = Math.Cos

@@ -42,22 +42,17 @@ let rec applyOperatorPrecedence expr =
     | Reference _ 
         -> expr
     | FunctionCall (name, ps) -> FunctionCall (name, ps |> List.map applyOperatorPrecedence)
-    | Group (expr) -> applyOperatorPrecedence expr |> Group
+    | Group expr -> applyOperatorPrecedence expr |> Group
     | OperatorCall (op, lhs, rhs) ->
         let lhs = applyOperatorPrecedence lhs
         let rhs = applyOperatorPrecedence rhs
         match lhs, rhs with
         | OperatorCall (op', lhs', rhs'), _ ->
-            
-            let lhs' = applyOperatorPrecedence lhs'
-            let rhs' = applyOperatorPrecedence rhs'
             if operatorPrecedence.[op'] < operatorPrecedence.[op] then
                 OperatorCall (op', OperatorCall (op, lhs, lhs'), rhs')
             else
                 OperatorCall (op, OperatorCall(op', lhs', rhs'), rhs)
         | _, OperatorCall (op', lhs', rhs') ->
-            let lhs' = applyOperatorPrecedence lhs'
-            let rhs' = applyOperatorPrecedence rhs'
             if operatorPrecedence.[op'] < operatorPrecedence.[op] then
                 OperatorCall (op', OperatorCall (op, lhs, lhs'), rhs')
             else
