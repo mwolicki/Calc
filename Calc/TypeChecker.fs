@@ -18,9 +18,30 @@ type RefDef =
       Type : Type }
 type FunDef = 
     { Name : FunName
-      ReturnType : Type
-      Parameters : Type list
       MethodInfo : System.Reflection.MethodInfo }
+with
+    member def.ReturnType = def.MethodInfo.ReturnType |> FunDef.GetType
+    member def.Parameters = 
+        def.MethodInfo.GetParameters ()
+        |> Array.map (fun p -> p.ParameterType |> FunDef.GetType)
+        |> List.ofArray
+    static member GetType t= 
+        if typeof<System.String> = t then String
+        elif typeof<System.Decimal> = t then Decimal
+        elif typeof<System.Double> = t then Decimal
+        elif typeof<System.Single> = t then Decimal
+        elif typeof<System.Boolean> = t then Boolean
+        elif typeof<System.UInt64> = t then Integer
+        elif typeof<System.Int64> = t then Integer
+        elif typeof<System.UInt32> = t then Integer
+        elif typeof<System.Int32> = t then Integer
+        elif typeof<System.UInt16> = t then Integer
+        elif typeof<System.Int16> = t then Integer
+        elif typeof<System.Byte> = t then Integer
+        elif typeof<System.SByte> = t then Integer
+        elif typeof<System.Void> = t then Unit
+        else
+            failwithf "Unsupported type %O %A" t.FullName t.IsGenericParameter
 
 let rec areCompatibleTypes actual expected = 
     match actual, expected with
