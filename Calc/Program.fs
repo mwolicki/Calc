@@ -1,10 +1,10 @@
 ﻿#if INTERACTIVE
+#r @"..\Calc.Lib\bin\Release\Calc.Lib.dll"
 #load "Result.fs"
 #load "Tokenizer.fs"
 #load "Analyser.fs"
 #load "TypeChecker.fs"
 #load "Emitter.fs"
-#r @"..\Calc.Lib\bin\Release\Calc.Lib.dll"
 #endif
 
 
@@ -91,8 +91,8 @@ typecheck "IF(i1+i2>0 ; COS(i2); 1 + i2^2 * 2^2)"
 
 
 let del = 
-    typecheck "i2 + i1" 
+    typecheck "d1" 
     |> unwrap
-    |> Emitter.generateMethod<int> funs refs
+    |> Emitter.generateMethod<decimal> funs refs
 del.Invoke accessor
 

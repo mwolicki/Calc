@@ -5,7 +5,6 @@ open System.Reflection.Emit
 open Calc.Lib
 open TypeChecker
 
-
 module Numbers =
     let mutable private assemblyNumber = 0;
     let mutable private methodNumber = 0;
@@ -82,8 +81,15 @@ let generateMethod<'a> (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) ((e
         match expr with
         | ConstBool true -> emitInt 1
         | ConstBool false -> emitInt 2
-        | ConstNum (Tokenizer.number.Integer v) ->
-            emitInt v
+        | ConstNum type' ->
+            match type' with
+            | Tokenizer.number.Integer v -> emitInt v
+            | Tokenizer.number.Real v -> 
+                System.Decimal.GetBits v 
+                |> Array.iter emitInt
+                let ctor = typeof<System.Decimal>.GetConstructor (BindingFlags.Instance ||| BindingFlags.NonPublic, null, [|typeof<int>;typeof<int>;typeof<int>;typeof<int>|], null)
+                il.Emit (OpCodes.Newobj, ctor)
+
         | ConstStr s -> il.Emit(OpCodes.Ldstr, s)
         | Group expr -> ilBuild expr
         | IsSimpleOperation (opCode, lhs, rhs) ->
