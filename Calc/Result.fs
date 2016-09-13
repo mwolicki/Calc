@@ -4,10 +4,16 @@ type Result<'a, 'b> =
     | OK of 'a
     | Error of 'b
 
-let unwrap = function
-| OK x -> x
-| Error e -> failwithf "error = %A" e
 
-let unwrapError = function
-| OK _ as x -> failwithf "not expected value = %A" x
-| Error e -> e
+module Result = 
+    let unwrap = function
+    | OK x -> x
+    | Error e -> failwithf "error = %A" e
+
+    let unwrapError = function
+    | OK _ as x -> failwithf "not expected value = %A" x
+    | Error e -> e
+
+    let map f = function
+    | OK x -> f x |> OK
+    | e -> e

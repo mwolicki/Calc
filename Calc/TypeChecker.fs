@@ -11,6 +11,30 @@ type Type =
 | Unit
 | Array of Type
 
+type TypedExpr = 
+| TConstStr of string
+| TConstNum of number
+| TConstBool of bool
+| TFunctionCall of name:FunctionName * returnType:Type * TypedExpr list
+| TNegate of TypedExpr
+| TOperatorCall of operator * lhs:TypedExpr * rhs:TypedExpr 
+| TReference of name:RefName * refType:Type
+| TGroup of TypedExpr
+| TConvertType of currentType: Type * newType: Type * expr:TypedExpr
+with 
+    member expr.GetType with get () = 
+                            match expr with
+                            | TConstBool _ -> Boolean
+                            | TConstStr _ -> String
+                            | TConstNum (number.Integer _) -> Integer
+                            | TConstNum (number.Real _) -> Decimal
+                            | TConvertType (newType = t) 
+                            | TReference (refType = t)
+                            | TFunctionCall (returnType = t) -> t
+                            | TNegate expr 
+                            | TGroup expr
+                            | TOperatorCall (lhs = expr)
+                                -> expr.GetType 
 type FunName = string
 
 type RefDef =
@@ -25,7 +49,7 @@ with
         def.MethodInfo.GetParameters ()
         |> Array.map (fun p -> p.ParameterType |> FunDef.GetType)
         |> List.ofArray
-    static member GetType t= 
+    static member GetType t = 
         if typeof<System.String> = t then String
         elif typeof<System.Decimal> = t then Decimal
         elif typeof<System.Double> = t then Decimal
@@ -54,6 +78,13 @@ let rec areCompatibleTypes actual expected =
     | Array a, Array e -> areCompatibleTypes a e
     | _ -> false
 
+let (|AreTypesCompatible|NotCompatibleTypes|) (expected, expr:TypedExpr) = 
+    let actual = expr.GetType
+    if actual = expected then AreTypesCompatible expr 
+    elif areCompatibleTypes actual expected then
+         AreTypesCompatible(TConvertType (actual, expected, expr))
+    else NotCompatibleTypes (actual, expected)
+
 let rec getExprType(fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) =
     function
     | FunctionCall (name, _) ->
@@ -76,30 +107,91 @@ let rec getExprType(fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) =
         match refs.TryFind refName with
         | Some def -> OK def.Type
         | None -> "unknown reference " + refName |> Error
+//
+//let check (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr =
+//    let getExprType = getExprType fs refs
+//    let rec check' (expr:Expr) : Result<Type,string> =
+//        match expr with
+//        | ConstNum _
+//        | ConstStr _
+//        | Reference _ 
+//        | ConstBool _ -> getExprType expr
+//        | Negate expr
+//        | Group expr -> check' expr
+//        | OperatorCall (op, lhs, rhs) ->
+//            let opType = getExprType expr
+//            let rhsType = check' rhs
+//            let lhsType = check' lhs
+//            match opType, lhsType, rhsType with
+//            | Error txt, _ , _
+//            | _, Error txt, _
+//            | _, _, Error txt
+//                -> Error txt
+//            | OK opType, OK lhsType, OK rhsType ->
+//                if areCompatibleTypes lhsType rhsType then OK opType
+//                else sprintf "Types %A, %A, %A are compatible (in operator %A)" opType lhsType rhsType op |> Error
+//                     
+//        | FunctionCall (name, ps) ->
+//            match fs.TryFind name with
+//            | Some def when def.Parameters.Length <> ps.Length -> 
+//                sprintf "Function %s is expecting to have %i arguments, but supplied %i" 
+//                    name def.Parameters.Length  ps.Length
+//                |> Error
+//            | None -> "Unknown function " + name |> Error
+//            | Some def ->
+//                let psTypes = ps |> List.map check'
+//                let types, errors = psTypes |> List.partition (function OK _ -> true | _ -> false)
+//                if errors.Length > 0 then
+//                    errors 
+//                    |> List.head
+//                    |> Result.unwrapError
+//                    |> Error
+//                else
+//                    let types = types |> List.choose (function OK x->Some x | _ -> None)
+//                    let errors = 
+//                        def.Parameters 
+//                        |> List.zip types 
+//                        |> List.filter (fun (actual, expected) -> areCompatibleTypes actual expected |> not)
+//                    if errors.Length > 0 then 
+//                        let act, exp = errors.Head
+//                        sprintf "Type %A is not compatible with %A (in function %s)" act exp name |> Error
+//                    else
+//                        OK def.ReturnType
+//    match expr with
+//    | OK expr -> 
+//        match check' expr with
+//        | OK t -> OK (expr, t)
+//        | Error txt -> Error txt 
+//    | Error (line:uint32, txt) -> sprintf "Error at line %i. Message = %s" line txt |> Error
 
-let check (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr =
+
+let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr =
     let getExprType = getExprType fs refs
-    let rec check' (expr:Expr) : Result<Type,string> =
+    
+    let rec toTypedSyntaxTree' expr =
         match expr with
-        | ConstNum _
-        | ConstStr _
-        | Reference _ 
-        | ConstBool _ -> getExprType expr
-        | Negate expr
-        | Group expr -> check' expr
+        | ConstNum n -> TConstNum n |> OK
+        | ConstStr s -> TConstStr s |> OK
+        | ConstBool b -> TConstBool b |> OK
+        | Reference refName -> 
+            match refs.TryFind refName with
+            | Some def -> TReference (refName, def.Type) |> OK
+            | None -> "unknown reference " + refName |> Error
+        | Group e -> toTypedSyntaxTree' e |> Result.map TGroup 
+        | Negate e -> toTypedSyntaxTree' e |> Result.map TNegate
         | OperatorCall (op, lhs, rhs) ->
-            let opType = getExprType expr
-            let rhsType = check' rhs
-            let lhsType = check' lhs
-            match opType, lhsType, rhsType with
-            | Error txt, _ , _
+            match getExprType expr, toTypedSyntaxTree' lhs, toTypedSyntaxTree' rhs with
+            | Error txt, _, _
             | _, Error txt, _
             | _, _, Error txt
                 -> Error txt
-            | OK opType, OK lhsType, OK rhsType ->
-                if areCompatibleTypes lhsType rhsType then OK opType
-                else sprintf "Types %A, %A, %A are compatible (in operator %A)" opType lhsType rhsType op |> Error
-                     
+            | OK opType, OK lhs, OK rhs ->
+                match (opType, lhs), (opType, rhs) with
+                | AreTypesCompatible lhs, AreTypesCompatible rhs ->
+                    TOperatorCall (op, lhs, rhs) |> OK
+                | NotCompatibleTypes (a,b), _ 
+                | _, NotCompatibleTypes (a,b) 
+                    -> sprintf "Types %A, %A are compatible (in operator %A)" a b op |> Error
         | FunctionCall (name, ps) ->
             match fs.TryFind name with
             | Some def when def.Parameters.Length <> ps.Length -> 
@@ -108,27 +200,26 @@ let check (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr =
                 |> Error
             | None -> "Unknown function " + name |> Error
             | Some def ->
-                let psTypes = ps |> List.map check'
+                let psTypes = ps |> List.map toTypedSyntaxTree'
                 let types, errors = psTypes |> List.partition (function OK _ -> true | _ -> false)
                 if errors.Length > 0 then
-                    errors 
-                    |> List.head
-                    |> unwrapError
-                    |> Error
+                    errors |> List.head |> Result.unwrapError |> Error
                 else
                     let types = types |> List.choose (function OK x->Some x | _ -> None)
-                    let errors = 
-                        def.Parameters 
-                        |> List.zip types 
-                        |> List.filter (fun (actual, expected) -> areCompatibleTypes actual expected |> not)
-                    if errors.Length > 0 then 
-                        let act, exp = errors.Head
-                        sprintf "Type %A is not compatible with %A (in function %s)" act exp name |> Error
+                    let params', errors = 
+                        types
+                        |> List.zip def.Parameters
+                        |> List.map (function AreTypesCompatible expr -> OK expr 
+                                              | NotCompatibleTypes (a,b) -> sprintf "Types %A, %A are compatible" a b |> Error)
+                        |> List.partition (function OK _ -> true | _ -> false)
+
+                    if errors.Length > 0 then
+                        errors |> List.head |> Result.unwrapError |> Error
                     else
-                        OK def.ReturnType
+                        TFunctionCall (name, def.ReturnType, params' |> List.map Result.unwrap) |> OK
     match expr with
     | OK expr -> 
-        match check' expr with
-        | OK t -> OK (expr, t)
+        match toTypedSyntaxTree' expr with
+        | OK expr -> OK expr
         | Error txt -> Error txt 
     | Error (line:uint32, txt) -> sprintf "Error at line %i. Message = %s" line txt |> Error
