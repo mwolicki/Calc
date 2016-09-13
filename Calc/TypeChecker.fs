@@ -60,6 +60,7 @@ let rec getExprType(fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) =
         match fs.TryFind name with
         | Some def -> OK def.ReturnType
         | None -> "unknown function " + name |> Error
+    | Negate expr
     | Group expr -> getExprType fs refs expr
     | ConstBool _ -> OK Boolean
     | ConstNum t -> 
@@ -84,6 +85,7 @@ let check (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr =
         | ConstStr _
         | Reference _ 
         | ConstBool _ -> getExprType expr
+        | Negate expr
         | Group expr -> check' expr
         | OperatorCall (op, lhs, rhs) ->
             let opType = getExprType expr

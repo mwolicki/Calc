@@ -61,8 +61,8 @@ let analyse = Tokenizer.tokenize >> Analyse.analyse
 let typecheck = Tokenizer.tokenize >> Analyse.analyse >> (TypeChecker.check funs refs)
 
 let del = 
-    typecheck "IF((i1+i1+i2+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1+i2+i1+i1+i1+i1+i1+i1)>0 ; 'A', 'B')" 
+    typecheck "-1" 
     |> unwrap
-    |> Emitter.generateMethod<string> funs refs
+    |> Emitter.generateMethod<int> funs refs
 del.Invoke accessor |> printfn "%O"
 

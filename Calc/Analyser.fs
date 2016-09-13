@@ -10,6 +10,7 @@ type Expr =
 | ConstNum of number
 | ConstBool of bool
 | FunctionCall of name:FunctionName * Expr list
+| Negate of Expr
 | OperatorCall of operator * left:Expr * right:Expr 
 | Reference of name:RefName
 | Group of Expr
@@ -38,8 +39,9 @@ let rec applyOperatorPrecedence expr =
     match expr with
     | ConstBool _
     | ConstNum _
-    | ConstStr _ 
-    | Reference _ 
+    | ConstStr _
+    | Reference _
+    | Negate _
         -> expr
     | FunctionCall (name, ps) -> FunctionCall (name, ps |> List.map applyOperatorPrecedence)
     | Group expr -> applyOperatorPrecedence expr |> Group
@@ -76,33 +78,38 @@ let rec (|IsFunctionCall|_|) (t: Token list) =
             Some (FunctionCall (s, ps), ts)
         | _ -> None
     | _ -> None
+and (|IsNegate|_|) = function
+     | Operator operator.Minus ::  Analyse (expr, ts) -> 
+        (Negate expr, ts) |> Some
+     | _ -> None
 and (|IsGroup|_|) = function
      | Bracket Open ::  Analyse (expr, (Bracket Close :: ts)) -> 
         (Group expr, ts) |> Some
      | _ -> None
-and (|Analyse|) (t:Token list) : Expr * Token list = anslyse' [] t
-and anslyse' (res:Expr list) (t: Token list) : (Expr * Token list) =
+and (|Analyse|) (t:Token list) : Expr * Token list = analyse' [] t
+and analyse' (res:Expr list) (t: Token list) : (Expr * Token list) =
     let getFirstOperand = 
         function
         | [r] -> r
         | rs -> failwithf "Unsupported combination of operations %A" rs
     match t with
+    | IsNegate (expr, ts) -> analyse' (expr :: res) ts
     | Operator s :: ts -> 
         let left = getFirstOperand res
-        let right, ts = anslyse' [] ts
+        let right, ts = analyse' [] ts
         OperatorCall (s, left, right), ts
-    | Text s :: ts -> anslyse' ((ConstStr s) :: res) ts
-    | NumberLiteral n :: ts -> anslyse' ((ConstNum n) :: res) ts
-    | BoolLiteral boolLit :: ts -> anslyse' ((ConstBool boolLit) :: res) ts
-    | IsGroup (expr, ts) -> anslyse' (expr :: res) ts
-    | IsFunctionCall (funCall, ts) -> anslyse' (funCall :: res) ts
-    | IsReference (refer, ts) -> anslyse' (refer :: res) ts
+    | Text s :: ts -> analyse' ((ConstStr s) :: res) ts
+    | NumberLiteral n :: ts -> analyse' ((ConstNum n) :: res) ts
+    | BoolLiteral boolLit :: ts -> analyse' ((ConstBool boolLit) :: res) ts
+    | IsGroup (expr, ts)
+    | IsFunctionCall (expr, ts)
+    | IsReference (expr, ts) -> analyse' (expr :: res) ts
     | _ -> getFirstOperand res, t
 
 let analyse (tokens) = 
     match tokens with 
     | OK t -> 
-        match anslyse' [] (t |> List.map fst) with
+        match analyse' [] (t |> List.map fst) with
         | res, [] -> res |> applyOperatorPrecedence |> OK
         | _, t::_ -> Error (0u, sprintf "failed analysing %A" t)
     | Error (s, p) -> Error (s, p) 

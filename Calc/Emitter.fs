@@ -90,6 +90,9 @@ let generateMethod<'a> (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) ((e
 
         | ConstStr s -> il.Emit(OpCodes.Ldstr, s)
         | Group expr -> ilBuild expr
+        | Negate expr  -> 
+            ilBuild expr
+            il.Emit OpCodes.Neg
         | IsSimpleOperation (opCode, lhs, rhs) ->
             ilBuild lhs
             ilBuild rhs
