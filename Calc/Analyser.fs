@@ -78,14 +78,27 @@ let rec (|IsFunctionCall|_|) (t: Token list) =
             Some (FunctionCall (s, ps), ts)
         | _ -> None
     | _ -> None
-and (|IsNegate|_|) = function
-     | Operator operator.Minus ::  Analyse (expr, ts) -> 
-        (Negate expr, ts) |> Some
-     | _ -> None
+and (|IsNegate|_|) expr = 
+    let (|Operation|_|) = function
+       | IsLiteral x
+       | IsGroup x
+       | IsFunctionCall x
+       | IsReference x -> Some x
+       | _ -> None
+
+    match expr with
+    | Operator operator.Minus :: Operation (expr, ts) -> 
+       (Negate expr, ts) |> Some
+    | _ -> None
 and (|IsGroup|_|) = function
      | Bracket Open ::  Analyse (expr, (Bracket Close :: ts)) -> 
         (Group expr, ts) |> Some
      | _ -> None
+and (|IsLiteral|_|) = function
+    | NumberLiteral n :: ts -> Some (ConstNum n, ts) 
+    | BoolLiteral b :: ts -> Some (ConstBool b, ts)
+    | Text s :: ts -> Some (ConstStr s, ts)
+    | _ -> None
 and (|Analyse|) (t:Token list) : Expr * Token list = analyse' [] t
 and analyse' (res:Expr list) (t: Token list) : (Expr * Token list) =
     let getFirstOperand = 
@@ -93,17 +106,15 @@ and analyse' (res:Expr list) (t: Token list) : (Expr * Token list) =
         | [r] -> r
         | rs -> failwithf "Unsupported combination of operations %A" rs
     match t with
-    | IsNegate (expr, ts) -> analyse' (expr :: res) ts
+    | IsLiteral (expr, ts)
+    | IsNegate (expr, ts) 
+    | IsGroup (expr, ts)
+    | IsFunctionCall (expr, ts)
+    | IsReference (expr, ts) -> analyse' (expr :: res) ts
     | Operator s :: ts -> 
         let left = getFirstOperand res
         let right, ts = analyse' [] ts
         OperatorCall (s, left, right), ts
-    | Text s :: ts -> analyse' ((ConstStr s) :: res) ts
-    | NumberLiteral n :: ts -> analyse' ((ConstNum n) :: res) ts
-    | BoolLiteral boolLit :: ts -> analyse' ((ConstBool boolLit) :: res) ts
-    | IsGroup (expr, ts)
-    | IsFunctionCall (expr, ts)
-    | IsReference (expr, ts) -> analyse' (expr :: res) ts
     | _ -> getFirstOperand res, t
 
 let analyse (tokens) = 

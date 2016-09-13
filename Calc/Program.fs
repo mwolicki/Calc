@@ -61,7 +61,7 @@ let analyse = Tokenizer.tokenize >> Analyse.analyse
 let typecheck = Tokenizer.tokenize >> Analyse.analyse >> (TypeChecker.toTypedSyntaxTree funs refs)
 
 let del = 
-    typecheck "1.0+1" 
+    typecheck "-1+1.0" 
     |> Result.unwrap
     |> Emitter.generateMethod<int> funs
 del.Invoke accessor |> printfn "%O"
