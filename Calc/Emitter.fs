@@ -61,7 +61,7 @@ let emitInt (il:ILGenerator) = function
 
 let generateMethod<'a> (fs:Map<FunName, FunDef>) (expr:TypedExpr) =
     let (|IsSimpleOperation|_|) = function
-    | TOperatorCall (op, lhs, rhs) ->
+    | TOperatorCall (op, lhs, rhs, _) ->
         match op with
         | Tokenizer.operator.Plus -> OpCodes.Add
         | Tokenizer.operator.Minus -> OpCodes.Sub

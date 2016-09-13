@@ -17,7 +17,7 @@ type TypedExpr =
 | TConstBool of bool
 | TFunctionCall of name:FunctionName * returnType:Type * TypedExpr list
 | TNegate of TypedExpr
-| TOperatorCall of operator * lhs:TypedExpr * rhs:TypedExpr 
+| TOperatorCall of operator * lhs:TypedExpr * rhs:TypedExpr * opType : Type
 | TReference of name:RefName * refType:Type
 | TGroup of TypedExpr
 | TConvertType of currentType: Type * newType: Type * expr:TypedExpr
@@ -28,12 +28,12 @@ with
                             | TConstStr _ -> String
                             | TConstNum (number.Integer _) -> Integer
                             | TConstNum (number.Real _) -> Decimal
+                            | TOperatorCall (opType = t)
                             | TConvertType (newType = t) 
                             | TReference (refType = t)
                             | TFunctionCall (returnType = t) -> t
                             | TNegate expr 
                             | TGroup expr
-                            | TOperatorCall (lhs = expr)
                                 -> expr.GetType 
 type FunName = string
 
@@ -129,9 +129,9 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
             | _, _, Error txt
                 -> Error txt
             | OK opType, OK lhs, OK rhs ->
-                match (opType, lhs), (opType, rhs) with
-                | AreTypesCompatible lhs, AreTypesCompatible rhs ->
-                    TOperatorCall (op, lhs, rhs) |> OK
+                match (lhs.GetType, rhs), (rhs.GetType, lhs) with
+                | AreTypesCompatible rhs, _ -> TOperatorCall (op, lhs, rhs, opType) |> OK
+                | _, AreTypesCompatible lhs -> TOperatorCall (op, lhs, rhs, opType) |> OK
                 | NotCompatibleTypes (a,b), _ 
                 | _, NotCompatibleTypes (a,b) 
                     -> sprintf "Types %A, %A are compatible (in operator %A)" a b op |> Error

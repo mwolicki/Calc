@@ -56,12 +56,11 @@ let accessor =
       member __.GetString _ = "text"
       member __.GetDecimal _ = 2m }
 
-let analyse = Tokenizer.tokenize >> Analyse.analyse
-
-let typecheck = Tokenizer.tokenize >> Analyse.analyse >> (TypeChecker.toTypedSyntaxTree funs refs)
-
 let del = 
-    typecheck "-1+1.0" 
+    "IF(1.0>2, 1,2)" 
+    |> Tokenizer.tokenize
+    |> Analyse.analyse
+    |> TypeChecker.toTypedSyntaxTree funs refs
     |> Result.unwrap
     |> Emitter.generateMethod<int> funs
 del.Invoke accessor |> printfn "%O"
