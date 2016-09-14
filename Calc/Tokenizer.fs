@@ -59,10 +59,10 @@ let (|IsStr|_|) s =
 
 let (|IsNumber|_|) s =
     match s with
-    | IsRegex "^[0-9]+\.[0-9]+" (str, pos) ->
-        Some (Decimal.Parse str |> Real, pos)
-    | IsRegex "^[0-9]+" (str, pos) ->
-        Some (Int32.Parse str |> Integer, pos)
+    | IsRegex "^[0-9][0-9_]*\.[0-9_]+" (str, pos) ->
+        Some (Decimal.Parse (str.Replace("_", "")) |> Real, pos)
+    | IsRegex "^[0-9][0-9_]*" (str, pos) ->
+        Some (Int32.Parse (str.Replace("_", "")) |> Integer, pos)
     | _ -> None
     |> Option.map (fun (num, i) -> NumberLiteral num, i)
 
