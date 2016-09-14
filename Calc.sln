@@ -7,6 +7,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Calc", "Calc\Calc.fsproj", 
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Calc.Lib", "Calc.Lib\Calc.Lib.fsproj", "{ED5B7FC6-9793-48E6-9F6E-2B636EB0912C}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Calc.Test", "Calc.Test\Calc.Test.fsproj", "{64F92F55-D434-4957-996D-60E9E992736E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{ED5B7FC6-9793-48E6-9F6E-2B636EB0912C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ED5B7FC6-9793-48E6-9F6E-2B636EB0912C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ED5B7FC6-9793-48E6-9F6E-2B636EB0912C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{64F92F55-D434-4957-996D-60E9E992736E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{64F92F55-D434-4957-996D-60E9E992736E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{64F92F55-D434-4957-996D-60E9E992736E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{64F92F55-D434-4957-996D-60E9E992736E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -7,7 +7,6 @@
 #load "Emitter.fs"
 #endif
 
-
 open TypeChecker
 
 open System.Reflection
@@ -55,6 +54,15 @@ let accessor =
       member __.GetBoolean _ = false
       member __.GetString _ = "text"
       member __.GetDecimal _ = 2m }
+
+
+module Compile =
+    let compile<'a> = 
+        Tokenizer.tokenize
+        >> Analyse.analyse
+        >> TypeChecker.toTypedSyntaxTree funs refs
+        >> Result.unwrap
+        >> Emitter.generateDynamicType<'a> funs
 
 let del = 
     "IF((1*3>3)=true,321311.99998888, 1+2+3-5*3+7)" 

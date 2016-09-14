@@ -123,7 +123,6 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
 let generateDynamicType<'a> (fs:Map<FunName, FunDef>) (expr:TypedExpr) =
     let assemblyNumber = Numbers.getAssemblyNumber()
     let assemblyName = sprintf "emit-calc-%i.dll" assemblyNumber
-    let partiallyTrusted = typeof<System.Security.AllowPartiallyTrustedCallersAttribute>.GetConstructor [||]
     let builder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName assemblyName, AssemblyBuilderAccess.RunAndSave)
     
     let m = builder.DefineDynamicModule (assemblyName, true)
@@ -138,7 +137,7 @@ let generateDynamicType<'a> (fs:Map<FunName, FunDef>) (expr:TypedExpr) =
     let type' = typeBulder.CreateType()
 
 
-    builder.Save assemblyName
+//    builder.Save assemblyName
 
     let mi = type'.GetMethod name
     mi.CreateDelegate(typeof<System.Func<IReferenceAccessor, 'a>>) :?> System.Func<IReferenceAccessor, 'a>
