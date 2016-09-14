@@ -85,32 +85,7 @@ let (|AreTypesCompatible|NotCompatibleTypes|) (expected, expr:TypedExpr) =
          AreTypesCompatible(TConvertType (actual, expected, expr))
     else NotCompatibleTypes (actual, expected)
 
-let rec getExprType(fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) =
-    function
-    | FunctionCall (name, _) ->
-        match fs.TryFind name with
-        | Some def -> OK def.ReturnType
-        | None -> "unknown function " + name |> Error
-    | Negate expr
-    | Group expr -> getExprType fs refs expr
-    | ConstBool _ -> OK Boolean
-    | ConstNum t -> 
-        match t with
-        | number.Integer _ -> OK Integer
-        | Real _ -> OK Decimal
-    | ConstStr _ -> OK String
-    | OperatorCall (op, lhs, _) ->
-        match op with
-        |Plus | Minus | Multiply | Divide (*| Power*) -> getExprType fs refs lhs
-        |Equals | Greater | Less (*| GreaterOrEqual | LessOrEqual | NotEqual*) -> OK Boolean
-    | Reference refName ->
-        match refs.TryFind refName with
-        | Some def -> OK def.Type
-        | None -> "unknown reference " + refName |> Error
-
 let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr =
-    let getExprType = getExprType fs refs
-    
     let rec toTypedSyntaxTree' expr =
         match expr with
         | ConstNum n -> TConstNum n |> OK
@@ -123,15 +98,21 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
         | Group e -> toTypedSyntaxTree' e |> Result.map TGroup 
         | Negate e -> toTypedSyntaxTree' e |> Result.map TNegate
         | OperatorCall (op, lhs, rhs) ->
-            match getExprType expr, toTypedSyntaxTree' lhs, toTypedSyntaxTree' rhs with
-            | Error txt, _, _
-            | _, Error txt, _
-            | _, _, Error txt
+            let getOperator (lhs:TypedExpr) (rhs:TypedExpr) =
+                match op with
+                | Plus | Minus | Divide | Multiply->
+                    TOperatorCall (op, lhs, rhs, lhs.GetType)
+                | Equals | Greater | Less -> 
+                    TOperatorCall (op, lhs, rhs, Boolean)
+
+            match toTypedSyntaxTree' lhs, toTypedSyntaxTree' rhs with
+            | Error txt, _
+            | _, Error txt
                 -> Error txt
-            | OK opType, OK lhs, OK rhs ->
+            | OK lhs, OK rhs ->
                 match (lhs.GetType, rhs), (rhs.GetType, lhs) with
-                | AreTypesCompatible rhs, _ -> TOperatorCall (op, lhs, rhs, opType) |> OK
-                | _, AreTypesCompatible lhs -> TOperatorCall (op, lhs, rhs, opType) |> OK
+                | AreTypesCompatible rhs, _ -> getOperator lhs rhs |> OK
+                | _, AreTypesCompatible lhs -> getOperator lhs rhs |> OK
                 | NotCompatibleTypes (a,b), _ 
                 | _, NotCompatibleTypes (a,b) 
                     -> sprintf "Types %A, %A are compatible (in operator %A)" a b op |> Error

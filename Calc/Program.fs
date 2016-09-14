@@ -57,7 +57,7 @@ let accessor =
       member __.GetDecimal _ = 2m }
 
 let del = 
-    "IF(1.0>2, 1,2)" 
+    "1+2+3+4+1+5.0+1" 
     |> Tokenizer.tokenize
     |> Analyse.analyse
     |> TypeChecker.toTypedSyntaxTree funs refs

@@ -107,7 +107,6 @@ and analyse' (res:Expr list) (t: Token list) : (Expr * Token list) =
         | rs -> failwithf "Unsupported combination of operations %A" rs
     match t with
     | IsLiteral (expr, ts)
-    | IsNegate (expr, ts) 
     | IsGroup (expr, ts)
     | IsFunctionCall (expr, ts)
     | IsReference (expr, ts) -> analyse' (expr :: res) ts
@@ -115,6 +114,7 @@ and analyse' (res:Expr list) (t: Token list) : (Expr * Token list) =
         let left = getFirstOperand res
         let right, ts = analyse' [] ts
         OperatorCall (s, left, right), ts
+    | IsNegate (expr, ts) -> analyse' (expr :: res) ts
     | _ -> getFirstOperand res, t
 
 let analyse (tokens) = 
