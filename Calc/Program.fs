@@ -57,11 +57,12 @@ let accessor =
       member __.GetDecimal _ = 2m }
 
 let del = 
-    "1+2+3+4+1+5.0+1" 
+    "IF((1*3>3)=true,321311.99998888, 1+2+3-5*3+7)" 
     |> Tokenizer.tokenize
     |> Analyse.analyse
     |> TypeChecker.toTypedSyntaxTree funs refs
     |> Result.unwrap
-    |> Emitter.generateMethod<int> funs
-del.Invoke accessor |> printfn "%O"
+    |> Emitter.generateDynamicType<string> funs
+
+del.Invoke accessor 
 

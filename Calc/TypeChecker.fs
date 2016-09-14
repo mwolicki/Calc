@@ -9,7 +9,14 @@ type Type =
 | Integer
 | Boolean
 | Unit
-| Array of Type
+with member t.GetBCLType =
+        match t with
+        | String -> typeof<string>
+        | Decimal -> typeof<decimal>
+        | Integer -> typeof<int>
+        | Boolean -> typeof<bool>
+        | Unit -> typeof<unit>
+
 
 type TypedExpr = 
 | TConstStr of string
@@ -75,7 +82,6 @@ let rec areCompatibleTypes actual expected =
     | Integer, String
     | Boolean, String
         -> true
-    | Array a, Array e -> areCompatibleTypes a e
     | _ -> false
 
 let (|AreTypesCompatible|NotCompatibleTypes|) (expected, expr:TypedExpr) = 
@@ -115,7 +121,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                 | _, AreTypesCompatible lhs -> getOperator lhs rhs |> OK
                 | NotCompatibleTypes (a,b), _ 
                 | _, NotCompatibleTypes (a,b) 
-                    -> sprintf "Types %A, %A are compatible (in operator %A)" a b op |> Error
+                    -> sprintf "Types %A & %A are not compatible (in operator %A)" a b op |> Error
         | FunctionCall (name, ps) ->
             match fs.TryFind name with
             | Some def when def.Parameters.Length <> ps.Length -> 
