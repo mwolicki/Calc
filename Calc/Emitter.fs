@@ -50,7 +50,9 @@ let emitInt (il:ILGenerator) = function
 
 let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
     let (|IsSimpleOperation|_|) = function
-    | TOperatorCall (op, lhs, rhs, _) when lhs.Type = Integer && rhs.Type = Integer ->
+    | TOperatorCall (op, lhs, rhs, _) when 
+        (lhs.Type = Integer && rhs.Type = Integer)
+        || (lhs.Type = Boolean && rhs.Type = Boolean) ->
         match op with
         | Tokenizer.operator.Plus -> OpCodes.Add
         | Tokenizer.operator.Minus -> OpCodes.Sub
