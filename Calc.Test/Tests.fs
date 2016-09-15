@@ -79,44 +79,64 @@ module Tests =
     [<Test>] 
     let ``123.456!=123.4567 is true`` () = "123.456!=123.4567" == true
 
-    type MathOps =
-    | Add
-    | Sub
-    | Div
-    | Mul
-    with member op.Char =
+    type MathOps = Add | Sub | Div | Mul
+    with member op.Str =
             match op with
-            | Add -> '+'
-            | Sub -> '-'
-            | Div -> '/'
-            | Mul -> '*'
+            | Add -> "+" | Sub -> "-"
+            | Div -> "/" | Mul -> "*"
          member inline op.Calc (a, b)=
             match op with
-            | Add -> a+b
-            | Sub -> a-b
-            | Div -> a/b
-            | Mul -> a*b
+            | Add -> a+b | Sub -> a-b
+            | Div -> a/b | Mul -> a*b
 
+    type BoolOps = Equals | Inequals | Greater | Less | GreaterOrEqual | LessOrEqual
+    with member op.Str =
+            match op with
+            | Equals -> "=" | Inequals -> "<>"
+            | GreaterOrEqual -> ">=" | Greater -> ">"
+            | LessOrEqual -> "<=" | Less -> "<"
+         member inline op.Calc (a, b)=
+            match op with
+            | Equals -> a=b | Inequals -> a<>b
+            | GreaterOrEqual -> a>=b | Greater -> a>b
+            | LessOrEqual -> a<=b | Less -> a<b
     let inline catch f =
         try
             f () |> Choice1Of2
         with ex -> ex.GetType().FullName |> Choice2Of2
 
     [<Test>] 
-    let ``check int operations`` () =
+    let ``check int math operations`` () =
         let test (a:int) (op:MathOps) (b:int) =
-            let actual = catch (fun () -> sprintf "%i %O %i" a op.Char b |> compileAndRun)
+            let actual = catch (fun () -> sprintf "%i %O %i" a op.Str b |> compileAndRun)
             let expected = catch (fun () -> op.Calc (a, b))
             actual = expected
         Check.QuickThrowOnFailure test
 
     [<Test>] 
-    let ``check int/decima operations`` () =
+    let ``check int/decima math operations`` () =
         let test (a:int) (op:MathOps) (b:decimal) =
-            let actual1 = catch (fun () ->sprintf "%i %O %M" a op.Char b |> compileAndRun)
+            let actual1 = catch (fun () ->sprintf "%O %O %O" a op.Str b |> compileAndRun)
             let expected1 = catch (fun () ->op.Calc (decimal a, b))
-            let actual2 = catch (fun () ->sprintf "%M %O %i" b op.Char a |> compileAndRun)
+            let actual2 = catch (fun () ->sprintf "%O %O %O" b op.Str a |> compileAndRun)
             let expected2 = catch (fun () ->op.Calc (b, decimal a))
             actual1 = expected1 && actual2 = expected2 
         Check.QuickThrowOnFailure test
 
+    [<Test>] 
+    let ``check int bool operations`` () =
+        let test (a:int) (op:BoolOps) (b:int) =
+            let actual = catch (fun () -> sprintf "%i %O %i" a op.Str b |> compileAndRun)
+            let expected = catch (fun () -> op.Calc (a, b))
+            actual = expected
+        Check.QuickThrowOnFailure test
+
+    [<Test>] 
+    let ``check int/decima bool operations`` () =
+        let test (a:int) (op:BoolOps) (b:decimal) =
+            let actual1 = catch (fun () ->sprintf "%O %O %O" a op.Str b |> compileAndRun)
+            let expected1 = catch (fun () ->op.Calc (decimal a, b))
+            let actual2 = catch (fun () ->sprintf "%O %O %O" b op.Str a |> compileAndRun)
+            let expected2 = catch (fun () ->op.Calc (b, decimal a))
+            actual1 = expected1 && actual2 = expected2 
+        Check.QuickThrowOnFailure test
