@@ -106,9 +106,9 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
         | OperatorCall (op, lhs, rhs) ->
             let getOperator (lhs:TypedExpr) (rhs:TypedExpr) =
                 match op with
-                | Plus | Minus | Divide | Multiply->
+                | Plus | Minus | Divide | Multiply | Concat ->
                     TOperatorCall (op, lhs, rhs, lhs.Type)
-                | Equals | Greater | Less -> 
+                | Equals | Greater | Less | Inequals | LessOrEqual | GreaterOrEqual -> 
                     TOperatorCall (op, lhs, rhs, Boolean)
 
             match toTypedSyntaxTree' lhs, toTypedSyntaxTree' rhs with

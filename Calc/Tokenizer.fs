@@ -3,7 +3,7 @@ open System
 open System.Text.RegularExpressions
 open Core
 
-type operator = Plus | Minus | Multiply | Divide (*| Power*) | Equals | Greater | Less (*| GreaterOrEqual | LessOrEqual | NotEqual*)
+type operator = Plus | Minus | Multiply | Divide (*| Power*) | Equals | Inequals | Greater | Less | GreaterOrEqual | LessOrEqual  | Concat
 
 type brakcet = Open | Close
 type number = Real of decimal | Integer of int
@@ -76,10 +76,14 @@ let (|IsOperator|_|) s =
     //| IsChar '^' _ -> Some (Power, 1)
     //| StartsWith "<>" _ -> Some (NotEqual, 2)
     | IsChar '=' _ -> Some (Equals, 1)
-    //| StartsWith ">=" _ -> Some (GreaterOrEqual, 2)
+    | StartsWith ">=" _ -> Some (GreaterOrEqual, 2)
     | IsChar '>' _ -> Some (Greater, 1)
-    //| StartsWith "<=" _ -> Some (LessOrEqual, 2)
+    | StartsWith "<=" _ -> Some (LessOrEqual, 2)
     | IsChar '<' _ -> Some (Less, 1)
+    | IsChar '&' _ -> Some (Concat, 1)
+    | StartsWith "<>" _ 
+    | StartsWith "!=" _ 
+        -> Some (Inequals, 2)
     | _ -> None
     |> Option.map (fun (x , i)-> Operator x, i)
 

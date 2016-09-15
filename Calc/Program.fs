@@ -13,7 +13,7 @@ open System.Reflection
 open Calc.Lib
 open Core
 
-let isNotNull = isNull >> not
+let isNotNull (a:'a) = a |> (isNull >> not)
 let getAllFunctions (asm:Assembly) =
     asm.GetTypes()
     |> Array.collect (fun x->x.GetMembers())
@@ -24,8 +24,10 @@ let getAllFunctions (asm:Assembly) =
     |> Array.map (fun (name, f)-> { Name = name; MethodInfo = f}, f)
 
 
-let funs =
-    getAllFunctions typeof<Calc.Lib.ExportAttribute>.Assembly
+let funs () =
+    let a = getAllFunctions typeof<Calc.Lib.ExportAttribute>.Assembly
+    
+    a
     |> Array.map (fst >> (fun x-> x.Name, x))
     |> Map.ofArray
 
@@ -58,19 +60,21 @@ let accessor =
 
 module Compile =
     let compile<'a> = 
+        let funcs = funs()    
         Tokenizer.tokenize
         >> Analyse.analyse
-        >> TypeChecker.toTypedSyntaxTree funs refs
+        >> TypeChecker.toTypedSyntaxTree funcs refs
         >> Result.unwrap
-        >> Emitter.generateDynamicType<'a> funs
+        >> Emitter.generateDynamicType<'a> funcs
 
 let del = 
+    let funcs = funs()
     "IF((1*3>3)=true,321311.99998888, 1+2+3-5*3+7)" 
     |> Tokenizer.tokenize
     |> Analyse.analyse
-    |> TypeChecker.toTypedSyntaxTree funs refs
+    |> TypeChecker.toTypedSyntaxTree funcs refs
     |> Result.unwrap
-    |> Emitter.generateDynamicType<string> funs
+    |> Emitter.generateDynamicType<string> funcs
 
 del.Invoke accessor 
 

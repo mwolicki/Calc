@@ -51,3 +51,16 @@ module Tests =
 
     [<Test>] 
     let ``(4-4)*0+1 is 1`` () = "(4-4)*0+1" == 1
+
+    [<Test>] 
+    let ``(4.0-4.0)*0.0+1.0/1.0 is 1`` () = "(4.0-4.0)*0.0+1.0/1.0" == 1
+
+    [<Test>] 
+    let ``'TEXT' & "text" is "TEXTtext"`` () = "'TEXT' & \"text\"" == "TEXTtext"
+    
+    [<Test>] 
+    let ``1>=1 is true`` () = "1>=1" == true
+
+    [<Test>] 
+    let ``1.0>=1.0 is true`` () = "1.0>=1.0" == true
+

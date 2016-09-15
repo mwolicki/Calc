@@ -110,7 +110,7 @@ and analyse' (res:Expr list) (t: Token list) : (Expr * Token list) =
     | IsGroup (expr, ts)
     | IsFunctionCall (expr, ts)
     | IsReference (expr, ts) -> analyse' (expr :: res) ts
-    | Operator s :: ts -> 
+    | Operator s :: ts when res.Length = 1 -> 
         let left = getFirstOperand res
         let right, ts = analyse' [] ts
         OperatorCall (s, left, right), ts
