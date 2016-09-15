@@ -105,7 +105,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 | Tokenizer.operator.GreaterOrEqual -> "op_GreaterThanOrEqual"
                 | Tokenizer.operator.LessOrEqual -> "op_LessThanOrEqual"
                 | Tokenizer.operator.Concat -> "Concat"
-            let mi = lhs.Type.GetBCLType.GetMethod mi
+            let mi = lhs.Type.GetBCLType.GetMethod (mi, [|lhs.Type.GetBCLType; rhs.Type.GetBCLType|])
             ilBuild lhs
             ilBuild rhs
             il.EmitCall(OpCodes.Call, mi, null)
