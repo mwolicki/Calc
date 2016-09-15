@@ -77,13 +77,14 @@ let (|IsOperator|_|) s =
     //| StartsWith "<>" _ -> Some (NotEqual, 2)
     | IsChar '=' _ -> Some (Equals, 1)
     | StartsWith ">=" _ -> Some (GreaterOrEqual, 2)
+    | StartsWith "<>" _ 
+    | StartsWith "!=" _ 
+        -> Some (Inequals, 2)
     | IsChar '>' _ -> Some (Greater, 1)
     | StartsWith "<=" _ -> Some (LessOrEqual, 2)
     | IsChar '<' _ -> Some (Less, 1)
     | IsChar '&' _ -> Some (Concat, 1)
-    | StartsWith "<>" _ 
-    | StartsWith "!=" _ 
-        -> Some (Inequals, 2)
+
     | _ -> None
     |> Option.map (fun (x , i)-> Operator x, i)
 

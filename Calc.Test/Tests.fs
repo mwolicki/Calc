@@ -41,7 +41,7 @@ module Tests =
     let ``true=false is false`` () = "true=false" == false
     
     [<Test>] 
-    let ``IF(1>2,5,7) is "7"`` () = "IF(1>2,5,7)" == "7"
+    let ``IF(1>2,5,7) is "7"`` () = "IF(1>2,5,7.0)" == "7.0"
 
     [<Test>] 
     let ``IF(1>2,-5,7) is "7"`` () = "IF(1>2,-5,7)" == "7"
@@ -63,4 +63,16 @@ module Tests =
 
     [<Test>] 
     let ``1.0>=1.0 is true`` () = "1.0>=1.0" == true
+    
+    [<Test>] 
+    let ``1<=-2 is false`` () = "1<=-2" == false
+    
+    [<Test>] 
+    let ``1<>1 is false`` () = "1<>1" == false
+
+    [<Test>] 
+    let ``'a'<>"a" is false`` () = "'a'<>\"a\"" == false
+
+    [<Test>] 
+    let ``123.456!=123.4567 is true`` () = "123.456!=123.4567" == true
 
