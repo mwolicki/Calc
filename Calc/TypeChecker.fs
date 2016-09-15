@@ -29,19 +29,19 @@ type TypedExpr =
 | TGroup of TypedExpr
 | TConvertType of currentType: Type * newType: Type * expr:TypedExpr
 with 
-    member expr.GetType with get () = 
-                            match expr with
-                            | TConstBool _ -> Boolean
-                            | TConstStr _ -> String
-                            | TConstNum (number.Integer _) -> Integer
-                            | TConstNum (number.Real _) -> Decimal
-                            | TOperatorCall (opType = t)
-                            | TConvertType (newType = t) 
-                            | TReference (refType = t)
-                            | TFunctionCall (returnType = t) -> t
-                            | TNegate expr 
-                            | TGroup expr
-                                -> expr.GetType 
+    member expr.Type = 
+        match expr with
+        | TConstBool _ -> Boolean
+        | TConstStr _ -> String
+        | TConstNum (number.Integer _) -> Integer
+        | TConstNum (number.Real _) -> Decimal
+        | TOperatorCall (opType = t)
+        | TConvertType (newType = t) 
+        | TReference (refType = t)
+        | TFunctionCall (returnType = t) -> t
+        | TNegate expr 
+        | TGroup expr
+            -> expr.Type 
 type FunName = string
 
 type RefDef =
@@ -85,7 +85,7 @@ let rec areCompatibleTypes actual expected =
     | _ -> false
 
 let (|AreTypesCompatible|NotCompatibleTypes|) (expected, expr:TypedExpr) = 
-    let actual = expr.GetType
+    let actual = expr.Type
     if actual = expected then AreTypesCompatible expr 
     elif areCompatibleTypes actual expected then
          AreTypesCompatible(TConvertType (actual, expected, expr))
@@ -107,7 +107,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
             let getOperator (lhs:TypedExpr) (rhs:TypedExpr) =
                 match op with
                 | Plus | Minus | Divide | Multiply->
-                    TOperatorCall (op, lhs, rhs, lhs.GetType)
+                    TOperatorCall (op, lhs, rhs, lhs.Type)
                 | Equals | Greater | Less -> 
                     TOperatorCall (op, lhs, rhs, Boolean)
 
@@ -116,7 +116,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
             | _, Error txt
                 -> Error txt
             | OK lhs, OK rhs ->
-                match (lhs.GetType, rhs), (rhs.GetType, lhs) with
+                match (lhs.Type, rhs), (rhs.Type, lhs) with
                 | AreTypesCompatible rhs, _ -> getOperator lhs rhs |> OK
                 | _, AreTypesCompatible lhs -> getOperator lhs rhs |> OK
                 | NotCompatibleTypes (a,b), _ 

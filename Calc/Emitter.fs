@@ -50,7 +50,7 @@ let emitInt (il:ILGenerator) = function
 
 let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
     let (|IsSimpleOperation|_|) = function
-    | TOperatorCall (op, lhs, rhs, _) ->
+    | TOperatorCall (op, lhs, rhs, _) when lhs.Type = Integer && rhs.Type = Integer ->
         match op with
         | Tokenizer.operator.Plus -> OpCodes.Add
         | Tokenizer.operator.Minus -> OpCodes.Sub
@@ -85,6 +85,21 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
             ilBuild lhs
             ilBuild rhs
             il.Emit opCode
+        | TOperatorCall (opCode, lhs, rhs, type') ->
+            let mi =
+                match opCode with
+                | Tokenizer.operator.Plus -> "op_Addition"
+                | Tokenizer.operator.Minus -> "op_Subtraction"
+                | Tokenizer.operator.Divide ->"op_Division"
+                | Tokenizer.operator.Multiply -> "op_Multiply"
+                | Tokenizer.operator.Equals -> "op_Equality"
+                | Tokenizer.operator.Greater -> "op_GreaterThan"
+                | Tokenizer.operator.Less -> "op_LessThan"
+                |> type'.GetBCLType.GetMethod
+            ilBuild lhs
+            ilBuild rhs
+            il.EmitCall(OpCodes.Call, mi, null)
+
         | TReference (name, type') -> 
             let methodInfo = 
                 match type' with
@@ -130,7 +145,7 @@ let generateDynamicType<'a> (fs:Map<FunName, FunDef>) (expr:TypedExpr) =
     let typeBulder = m.DefineType ("emmit-type", staticClassAttributes)
     
     let name = Numbers.getMethodNumber() |> sprintf "method-%i" 
-    let methodBuilder =typeBulder.DefineMethod(name, staticMethodAttributes, expr.GetType.GetBCLType, [|typeof<IReferenceAccessor>|])
+    let methodBuilder =typeBulder.DefineMethod(name, staticMethodAttributes, expr.Type.GetBCLType, [|typeof<IReferenceAccessor>|])
 
     methodBuilder.GetILGenerator() |> generateMethod fs expr
 
