@@ -1,6 +1,6 @@
 ﻿namespace Calc.Test
 open NUnit.Framework
-
+open FsCheck
 module Tests =
 
     let compileAndRun<'a> s = (Program.Compile.compile<'a> s).Invoke(Unchecked.defaultof<Calc.Lib.IReferenceAccessor>)
@@ -31,6 +31,9 @@ module Tests =
     [<Test>] 
     let ``-1 is -1`` () = "-1" == -1
     
+    [<Test>] 
+    let ``-1.0 is -1m`` () = "-1.0" == -1m
+
     [<Test>] 
     let ``-1*(-1) is 1`` () = "-1*(-1)" == 1
     
@@ -72,7 +75,48 @@ module Tests =
 
     [<Test>] 
     let ``'a'<>"a" is false`` () = "'a'<>\"a\"" == false
-
+    
     [<Test>] 
     let ``123.456!=123.4567 is true`` () = "123.456!=123.4567" == true
+
+    type MathOps =
+    | Add
+    | Sub
+    | Div
+    | Mul
+    with member op.Char =
+            match op with
+            | Add -> '+'
+            | Sub -> '-'
+            | Div -> '/'
+            | Mul -> '*'
+         member inline op.Calc (a, b)=
+            match op with
+            | Add -> a+b
+            | Sub -> a-b
+            | Div -> a/b
+            | Mul -> a*b
+
+    let inline catch f =
+        try
+            f () |> Choice1Of2
+        with ex -> ex.GetType().FullName |> Choice2Of2
+
+    [<Test>] 
+    let ``check int operations`` () =
+        let test (a:int) (op:MathOps) (b:int) =
+            let actual = catch (fun () -> sprintf "%i %O %i" a op.Char b |> compileAndRun)
+            let expected = catch (fun () -> op.Calc (a, b))
+            actual = expected
+        Check.QuickThrowOnFailure test
+
+    [<Test>] 
+    let ``check int/decima operations`` () =
+        let test (a:int) (op:MathOps) (b:decimal) =
+            let actual1 = catch (fun () ->sprintf "%i %O %M" a op.Char b |> compileAndRun)
+            let expected1 = catch (fun () ->op.Calc (decimal a, b))
+            let actual2 = catch (fun () ->sprintf "%M %O %i" b op.Char a |> compileAndRun)
+            let expected2 = catch (fun () ->op.Calc (b, decimal a))
+            actual1 = expected1 && actual2 = expected2 
+        Check.QuickThrowOnFailure test
 

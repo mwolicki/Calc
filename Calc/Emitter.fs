@@ -84,9 +84,11 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
 
         | TConstStr s -> il.Emit(OpCodes.Ldstr, s)
         | TGroup expr -> ilBuild expr
-        | TNegate expr  -> 
+        | TNegate expr when expr.Type = TypeChecker.Integer -> 
             ilBuild expr
             il.Emit OpCodes.Neg
+        | TNegate expr when expr.Type = TypeChecker.Decimal -> 
+            ilBuild <| TOperatorCall(Tokenizer.Multiply, TConstNum(Tokenizer.number.Real(-1M)), expr, Type.Decimal)
         | IsSimpleOperation (opCodes, lhs, rhs) ->
             ilBuild lhs
             ilBuild rhs

@@ -69,12 +69,12 @@ module Compile =
 
 let del = 
     let funcs = funs()
-    "IF((1*3>3)=true,321311.99998888, 1+2+3-5*3+7)" 
+    "3 - -792281624.95817593515539431421" 
     |> Tokenizer.tokenize
     |> Analyse.analyse
     |> TypeChecker.toTypedSyntaxTree funcs refs
     |> Result.unwrap
-    |> Emitter.generateDynamicType<string> funcs
+    |> Emitter.generateDynamicType<decimal> funcs
 
 del.Invoke accessor 
 

@@ -58,11 +58,17 @@ let (|IsStr|_|) s =
 
 
 let (|IsNumber|_|) s =
+    let isDecimal (str:string) (pos:int) =
+        match Decimal.TryParse (str.Replace("_", "")) with
+        | true, v -> Some (Real v, pos)
+        | _ -> None
     match s with
     | IsRegex "^[0-9][0-9_]*\.[0-9_]+" (str, pos) ->
-        Some (Decimal.Parse (str.Replace("_", "")) |> Real, pos)
+        isDecimal str pos
     | IsRegex "^[0-9][0-9_]*" (str, pos) ->
-        Some (Int32.Parse (str.Replace("_", "")) |> Integer, pos)
+        match Int32.TryParse (str.Replace("_", "")) with
+        | true, v -> Some (Integer v, pos)
+        | _ -> isDecimal str pos
     | _ -> None
     |> Option.map (fun (num, i) -> NumberLiteral num, i)
 
