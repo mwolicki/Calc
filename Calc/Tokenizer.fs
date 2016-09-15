@@ -44,8 +44,8 @@ let (|IsStrLiteral|_|) s =
     match s with
     | IsRegex "^[A-Za-z_][A-Za-z_0-9]*" m ->
         Some m
-    | IsRegex "^``[^`]+``" (str, i) ->
-        Some (str.Substring (2, str.Length - 4), i)
+    | IsRegex "^`[^`]+`" (str, i) ->
+        Some (str.Substring (1, str.Length - 2), i)
     | _ -> None
     |> Option.map (fun (s, i) -> StringLiteral s, i)
 

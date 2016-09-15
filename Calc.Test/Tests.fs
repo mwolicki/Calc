@@ -3,13 +3,16 @@ open NUnit.Framework
 open FsCheck
 module Tests =
 
-    let compileAndRun<'a> s = (Program.Compile.compile<'a> s).Invoke(Unchecked.defaultof<Calc.Lib.IReferenceAccessor>)
+    let compileAndRun<'a> s = (Program.Compile.compile<'a> s).Invoke(Program.accessor())
 
     let (==) a (b:'a) = Assert.AreEqual(b, compileAndRun<'a> a)
 
     [<Test>]
     let ``1 is 1`` () = "1" == 1
     
+    [<Test>]
+    let ```d long name` + 1 is 3m`` () = "`d long name` + 1" == 3m
+
     [<Test>]
     let ``1_000_000 is 1000000`` () = "1_000_000" == 1000000
 

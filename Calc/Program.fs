@@ -32,7 +32,7 @@ let funs () =
     |> Map.ofArray
 
 
-let refs =
+let refs () =
     [ { Name = "i1"; Type = Integer }
       { Name = "i2"; Type = Integer }
       { Name = "s1"; Type = String }
@@ -40,13 +40,14 @@ let refs =
       { Name = "b1"; Type = Boolean }
       { Name = "b2"; Type = Boolean }
       { Name = "d1"; Type = Decimal }
-      { Name = "d2"; Type = Decimal } ]
+      { Name = "d2"; Type = Decimal }
+      { Name = "d long name"; Type = Decimal } ]
     |> List.map (fun x-> x.Name, x)
     |> Map.ofList
 
 let rnd = new System.Random()
 
-let accessor = 
+let accessor () = 
     { new IReferenceAccessor with
       member __.GetInt name = 
         match name with
@@ -60,7 +61,8 @@ let accessor =
 
 module Compile =
     let compile<'a> = 
-        let funcs = funs()    
+        let funcs = funs()
+        let refs = refs()
         Tokenizer.tokenize
         >> Analyse.analyse
         >> TypeChecker.toTypedSyntaxTree funcs refs
@@ -69,6 +71,8 @@ module Compile =
 
 let del = 
     let funcs = funs()
+    let refs = refs()
+
     "3 - -792281624.95817593515539431421" 
     |> Tokenizer.tokenize
     |> Analyse.analyse
@@ -76,5 +80,5 @@ let del =
     |> Result.unwrap
     |> Emitter.generateDynamicType<decimal> funcs
 
-del.Invoke accessor 
+del.Invoke <| accessor ()
 
