@@ -161,16 +161,21 @@ module Tests =
     open TypeChecker
     open Emitter
 
+    let callMethod<'a> expr = 
+        generateDynamicType<'a> (Program.funs()) expr
+        |> fun x -> x.Invoke (Program.accessor())
+        |> ignore
+
     [<Test>] 
     let ``random AST dont crash analyser`` () =
-        let generateMethod (expr:TypedExpr) : System.Delegate =
-            match expr.Type with
-            | Integer -> generateDynamicType<int> (Program.funs()) expr :> System.Delegate
-            | String -> generateDynamicType<string> (Program.funs()) expr :> System.Delegate
-            | Decimal -> generateDynamicType<decimal> (Program.funs()) expr :> System.Delegate
-            | Boolean -> generateDynamicType<bool> (Program.funs()) expr :> System.Delegate
-            | Unit -> generateDynamicType<unit> (Program.funs()) expr :> System.Delegate
+        let generateMethod (expr:TypedExpr) =
 
+            match expr.Type with
+            | Integer -> callMethod<int> expr
+            | String -> callMethod<string> expr
+            | Decimal -> callMethod<decimal> expr
+            | Boolean -> callMethod<bool> expr
+            | Unit -> callMethod<unit> expr
 
         let test (tokens : Analyse.Expr) =
             match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree (Program.funs()) (Program.refs()) with

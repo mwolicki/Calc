@@ -3,7 +3,7 @@ open System
 open System.Text.RegularExpressions
 open Core
 
-type operator = Plus | Minus | Multiply | Divide (*| Power*) | Equals | Inequals | Greater | Less | GreaterOrEqual | LessOrEqual  | Concat
+type operator = Plus | Minus | Multiply | Divide (*| Power*) | Equals | Inequality | Greater | Less | GreaterOrEqual | LessOrEqual  | Concat
 
 type brakcet = Open | Close
 type number = Real of decimal | Integer of int
@@ -85,7 +85,7 @@ let (|IsOperator|_|) s =
     | StartsWith ">=" _ -> Some (GreaterOrEqual, 2)
     | StartsWith "<>" _ 
     | StartsWith "!=" _ 
-        -> Some (Inequals, 2)
+        -> Some (Inequality, 2)
     | IsChar '>' _ -> Some (Greater, 1)
     | StartsWith "<=" _ -> Some (LessOrEqual, 2)
     | IsChar '<' _ -> Some (Less, 1)

@@ -60,7 +60,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
         | Tokenizer.operator.Divide -> [OpCodes.Div]
         | Tokenizer.operator.Multiply -> [OpCodes.Mul]
         | Tokenizer.operator.Equals -> [OpCodes.Ceq]
-        | Tokenizer.operator.Inequals -> [OpCodes.Ceq; OpCodes.Ldc_I4_0; OpCodes.Ceq]
+        | Tokenizer.operator.Inequality -> [OpCodes.Ceq; OpCodes.Ldc_I4_0; OpCodes.Ceq]
         | Tokenizer.operator.Greater -> [OpCodes.Cgt]
         | Tokenizer.operator.GreaterOrEqual -> [OpCodes.Clt; OpCodes.Ldc_I4_0; OpCodes.Ceq]
         | Tokenizer.operator.Less -> [OpCodes.Clt]
@@ -87,33 +87,10 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
         | TNegate expr when expr.Type = TypeChecker.Integer || expr.Type = TypeChecker.Boolean -> 
             ilBuild expr
             il.Emit OpCodes.Neg
-        | TNegate expr when expr.Type = TypeChecker.Decimal -> 
-            ilBuild <| TOperatorCall(Tokenizer.Multiply, TConstNum(Tokenizer.number.Real(-1M)), expr, Type.Decimal)
-        | TNegate expr when  expr.Type = TypeChecker.String ->
-            //TODO: we cannot negate string - so currently we ignore it, that should be raised as an error (but not as a crash!)
-            ilBuild expr
         | IsSimpleOperation (opCodes, lhs, rhs) ->
             ilBuild lhs
             ilBuild rhs
             List.iter il.Emit opCodes
-        | TOperatorCall (opCode, lhs, rhs, t) ->
-            let mi =
-                match opCode with
-                | Tokenizer.operator.Plus -> "op_Addition"
-                | Tokenizer.operator.Minus -> "op_Subtraction"
-                | Tokenizer.operator.Divide ->"op_Division"
-                | Tokenizer.operator.Multiply -> "op_Multiply"
-                | Tokenizer.operator.Equals -> "op_Equality"
-                | Tokenizer.operator.Greater -> "op_GreaterThan"
-                | Tokenizer.operator.Less -> "op_LessThan"
-                | Tokenizer.operator.Inequals -> "op_Inequality"
-                | Tokenizer.operator.GreaterOrEqual -> "op_GreaterThanOrEqual"
-                | Tokenizer.operator.LessOrEqual -> "op_LessThanOrEqual"
-                | Tokenizer.operator.Concat -> "Concat"
-            let mi = lhs.Type.GetBCLType.GetMethod (mi, [|lhs.Type.GetBCLType; rhs.Type.GetBCLType|])
-            ilBuild lhs
-            ilBuild rhs
-            il.EmitCall(OpCodes.Call, mi, null)
 
         | TReference (name, type') -> 
             let methodInfo = 
@@ -127,9 +104,9 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
             il.Emit OpCodes.Ldarg_0
             il.Emit(OpCodes.Ldstr, name)
             il.EmitCall(OpCodes.Callvirt, methodInfo, null)
-        | TFunctionCall (name, _, params') -> 
+        | TFunctionCall (mi, _, params') -> 
             params' |> List.iter ilBuild
-            il.EmitCall(OpCodes.Call, fs.[name].MethodInfo, null)
+            il.EmitCall(OpCodes.Call, mi, null)
         | TConvertType (currentType, newType, expr) ->
             ilBuild expr
             match currentType, newType with
