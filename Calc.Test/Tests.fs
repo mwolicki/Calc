@@ -2,8 +2,40 @@
 open NUnit.Framework
 open FsCheck
 module Tests =
+    open Calc.Lib
+    open TypeChecker
+    open Compile
 
-    let compileAndRun<'a> s = (Program.Compile.compile<'a> s).Invoke(Program.accessor())
+    let refs =
+        [ { Name = "i1"; Type = Integer }
+          { Name = "i2"; Type = Integer }
+          { Name = "s1"; Type = String }
+          { Name = "s2"; Type = String }
+          { Name = "b1"; Type = Boolean }
+          { Name = "b2"; Type = Boolean }
+          { Name = "d1"; Type = Decimal }
+          { Name = "d2"; Type = Decimal }
+          { Name = "d long name"; Type = Decimal } ]
+        |> List.map (fun x-> x.Name, x)
+        |> Map.ofList
+
+    let rnd = new System.Random()
+
+    let accessor = 
+        { new IReferenceAccessor with
+          member __.GetInt name = 
+            match name with
+            | "i1" -> 1
+            | "i2" -> rnd.Next ()
+            | _ -> -5
+          member __.GetBoolean _ = false
+          member __.GetString _ = "text"
+          member __.GetDecimal _ = 2m }
+
+
+    let compileAndRun<'a> s = 
+        Compile.compile<'a> defaultFuncs refs s
+        |> fun d -> d.Invoke accessor
 
     let (==) a (b:'a) = Assert.AreEqual(b, compileAndRun<'a> a)
 
@@ -161,24 +193,47 @@ module Tests =
     open TypeChecker
     open Emitter
 
-    let callMethod<'a> expr = 
-        generateDynamicType<'a> (Program.funs()) expr
-        |> fun x -> x.Invoke (Program.accessor())
+    let callMethod<'a> fs expr = 
+        generateDynamicType<'a> fs expr
+        |> fun x -> x.Invoke accessor
         |> ignore
 
+    open Analyse
     [<Test>] 
     let ``random AST dont crash analyser`` () =
-        let generateMethod (expr:TypedExpr) =
-
+        let callMethod fs (expr:TypedExpr)  =
             match expr.Type with
-            | Integer -> callMethod<int> expr
-            | String -> callMethod<string> expr
-            | Decimal -> callMethod<decimal> expr
-            | Boolean -> callMethod<bool> expr
-            | Unit -> callMethod<unit> expr
+            | Integer -> callMethod<int> fs expr
+            | String -> callMethod<string>  fs expr
+            | Decimal -> callMethod<decimal>  fs expr
+            | Boolean -> callMethod<bool>  fs expr
+            | Unit -> callMethod<unit>  fs expr
+
+        let rec getRefs (expr: Analyse.Expr) =
+            match expr with
+            | ConstStr _
+            | ConstNum _
+            | ConstBool _ -> Set.empty, Set.empty
+            | FunctionCall (name, es) ->
+                let init = Set.empty, Set [name]
+                es
+                |> List.map getRefs 
+                |> List.fold (fun (rs, fs) (rs', fs') -> Set.union rs rs', Set.union fs fs') init
+            | OperatorCall (_, a, b) ->
+                 let rs, fs = getRefs a
+                 let rs', fs' = getRefs b
+                 Set.union rs rs', Set.union fs fs'
+            | Reference name -> Set [name], Set.empty
+            | Negate e
+            | Group e -> getRefs e
 
         let test (tokens : Analyse.Expr) =
-            match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree (Program.funs()) (Program.refs()) with
-            | Core.OK x -> generateMethod x |> ignore
-            | _ -> ()
+            let rs, fs = getRefs tokens
+            let mi = defaultFuncs.["TEXT"].MethodInfo
+            let fs = fs |> Seq.map (fun x->x, {Name = x; MethodInfo = mi}) |> Map.ofSeq
+            let rs = rs |> Seq.map (fun x->x, {Name = x; Type = Integer}) |> Map.ofSeq
+
+            match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree fs rs with
+            | Core.OK x -> callMethod fs x
+            | Core.Error e -> printfn "%A" e
         Check.QuickThrowOnFailure test

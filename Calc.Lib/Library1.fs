@@ -17,9 +17,14 @@ module Lib =
 
     [<Export("COS")>]
     let cos = Math.Cos
-
+    
     [<Export("SIN")>]
     let sin = Math.Sin
+
+
+    [<Export("TEXT")>]
+    let text (a:string) = a
+
 
     [<Export("STARTSWITH")>]
     let startsWith (s:string) (pattern:string) = s.StartsWith (pattern, StringComparison.InvariantCulture) 

@@ -112,7 +112,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
         | ConstStr s when isNull s -> Error "string literal cannot be <null>"
         | ConstStr s -> TConstStr s |> OK
         | ConstBool b -> TConstBool b |> OK
-        | Reference refName -> 
+        | Reference refName  when refName <> null -> 
             match refs.TryFind refName with
             | Some def -> TReference (refName, def.Type) |> OK
             | None -> "unknown reference " + refName |> Error
@@ -140,7 +140,6 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                     let mi = type'.GetMethod (name, [| type'; type' |])
                     if isNull mi then None
                     else Some mi
-
                 match op, lhs.Type with
                 | Plus, MethodInfo "op_Addition" mi 
                 | Plus, MethodInfo "Concat" mi 
@@ -169,7 +168,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                 | NotCompatibleTypes (a,b), _ 
                 | _, NotCompatibleTypes (a,b) 
                     -> sprintf "Types %A & %A are not compatible (in operator %A)" a b op |> Error
-        | FunctionCall (name, ps) ->
+        | FunctionCall (name, ps) when name <> null ->
             match fs.TryFind name with
             | Some def when def.Parameters.Length <> ps.Length -> 
                 sprintf "Function %s is expecting to have %i arguments, but supplied %i" 
@@ -194,6 +193,9 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                         errors |> List.head |> Result.unwrapError |> Error
                     else
                         TFunctionCall (def.MethodInfo, def.ReturnType, params' |> List.map Result.unwrap) |> OK
+        | Reference (_)
+        | FunctionCall (_) ->
+            sprintf "Unuported element %A " expr |>  Error 
     match expr with
     | OK expr -> toTypedSyntaxTree' expr  
     | Error (line:uint32, txt) -> sprintf "Error at line %i. Message = %s" line txt |> Error
