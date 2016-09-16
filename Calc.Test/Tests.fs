@@ -152,10 +152,22 @@ module Tests =
         Check.QuickThrowOnFailure test
 
 
+    open TypeChecker
+    open Emitter
+
     [<Test>] 
     let ``random AST dont crash analyser`` () =
+        let generateMethod (expr:TypedExpr) : System.Delegate =
+            match expr.Type with
+            | Integer -> generateDynamicType<int> (Program.funs()) expr :> System.Delegate
+            | String -> generateDynamicType<string> (Program.funs()) expr :> System.Delegate
+            | Decimal -> generateDynamicType<decimal> (Program.funs()) expr :> System.Delegate
+            | Boolean -> generateDynamicType<bool> (Program.funs()) expr :> System.Delegate
+            | Unit -> generateDynamicType<unit> (Program.funs()) expr :> System.Delegate
+
+
         let test (tokens : Analyse.Expr) =
             match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree (Program.funs()) (Program.refs()) with
-            | Core.OK x -> Emitter.generateDynamicType<obj> (Program.funs()) x |> ignore
+            | Core.OK x -> generateMethod x |> ignore
             | _ -> ()
         Check.QuickThrowOnFailure test

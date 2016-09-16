@@ -99,12 +99,15 @@ and (|IsLiteral|_|) = function
     | BoolLiteral b :: ts -> Some (ConstBool b, ts)
     | Text s :: ts -> Some (ConstStr s, ts)
     | _ -> None
-and (|Analyse|) (t:Token list) : Expr * Token list = analyse' [] t
-and analyse' (res:Expr list) (t: Token list) : (Expr * Token list) =
+and (|Analyse|_|) (t:Token list)= 
+    match analyse' [] t with
+    | OK x -> Some x
+    | _ -> None
+and analyse' (res:Expr list) (t: Token list) =
     let getFirstOperand = 
         function
-        | [r] -> r
-        | rs -> failwithf "Unsupported combination of operations %A" rs
+        | [r] -> OK r
+        | rs -> sprintf "Unsupported combination of operations %A" rs |> Error 
     match t with
     | IsLiteral (expr, ts)
     | IsGroup (expr, ts)
@@ -112,15 +115,21 @@ and analyse' (res:Expr list) (t: Token list) : (Expr * Token list) =
     | IsReference (expr, ts) -> analyse' (expr :: res) ts
     | Operator s :: ts when res.Length = 1 -> 
         let left = getFirstOperand res
-        let right, ts = analyse' [] ts
-        OperatorCall (s, left, right), ts
+        let right = analyse' [] ts
+        match left, right with
+        | OK left, (OK (right, ts)) ->
+            (OperatorCall (s, left, right), ts) |> OK
+        | Error x, _
+        | _, Error x ->
+            Error x
     | IsNegate (expr, ts) -> analyse' (expr :: res) ts
-    | _ -> getFirstOperand res, t
+    | _ -> getFirstOperand res |> Result.map (fun r-> r, t)
 
 let analyse (tokens) = 
     match tokens with 
     | OK t -> 
         match analyse' [] (t |> List.map fst) with
-        | res, [] -> res |> applyOperatorPrecedence |> OK
-        | _, t::_ -> Error (0u, sprintf "failed analysing %A" t)
+        | OK (res, []) -> res |> applyOperatorPrecedence |> OK
+        | OK(_, t::_) -> Error (0u, sprintf "failed analysing %A" t)
+        | Error (s) -> Error (0u, s) 
     | Error (s, p) -> Error (s, p) 

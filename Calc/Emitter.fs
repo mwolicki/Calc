@@ -84,11 +84,14 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
 
         | TConstStr s -> il.Emit(OpCodes.Ldstr, s)
         | TGroup expr -> ilBuild expr
-        | TNegate expr when expr.Type = TypeChecker.Integer -> 
+        | TNegate expr when expr.Type = TypeChecker.Integer || expr.Type = TypeChecker.Boolean -> 
             ilBuild expr
             il.Emit OpCodes.Neg
         | TNegate expr when expr.Type = TypeChecker.Decimal -> 
             ilBuild <| TOperatorCall(Tokenizer.Multiply, TConstNum(Tokenizer.number.Real(-1M)), expr, Type.Decimal)
+        | TNegate expr when  expr.Type = TypeChecker.String ->
+            //TODO: we cannot negate string - so currently we ignore it, that should be raised as an error (but not as a crash!)
+            ilBuild expr
         | IsSimpleOperation (opCodes, lhs, rhs) ->
             ilBuild lhs
             ilBuild rhs

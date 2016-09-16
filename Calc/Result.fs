@@ -16,4 +16,4 @@ module Result =
 
     let map f = function
     | OK x -> f x |> OK
-    | e -> e
+    | Error e -> Error e

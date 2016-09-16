@@ -95,6 +95,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
     let rec toTypedSyntaxTree' expr =
         match expr with
         | ConstNum n -> TConstNum n |> OK
+        | ConstStr s when s = null -> Error "string literal cannot be <null>"
         | ConstStr s -> TConstStr s |> OK
         | ConstBool b -> TConstBool b |> OK
         | Reference refName -> 
