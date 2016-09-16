@@ -133,7 +133,7 @@ module Tests =
             let expected = catch (fun () -> op.Calc (a, b))
             actual = expected
         Check.QuickThrowOnFailure test
-
+        
     [<Test>] 
     let ``check int/decima bool operations`` () =
         let test (a:int) (op:BoolOps) (b:decimal) =
@@ -142,4 +142,20 @@ module Tests =
             let actual2 = catch (fun () ->sprintf "%O %O %O" b op.Str a |> compileAndRun)
             let expected2 = catch (fun () ->op.Calc (b, decimal a))
             actual1 = expected1 && actual2 = expected2 
+        Check.QuickThrowOnFailure test
+
+    [<Test>] 
+    let ``random tokens don't crash analyser`` () =
+        let test (tokens : Tokenizer.Token list) =
+            tokens |> Analyse.analyse' [] |> ignore
+            true
+        Check.QuickThrowOnFailure test
+
+
+    [<Test>] 
+    let ``random AST dont crash analyser`` () =
+        let test (tokens : Analyse.Expr) =
+            match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree (Program.funs()) (Program.refs()) with
+            | Core.OK x -> Emitter.generateDynamicType<obj> (Program.funs()) x |> ignore
+            | _ -> ()
         Check.QuickThrowOnFailure test
