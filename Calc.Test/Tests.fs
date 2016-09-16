@@ -111,7 +111,7 @@ module Tests =
     [<Test>] 
     let ``check int math operations`` () =
         let test (a:int) (op:MathOps) (b:int) =
-            let actual = catch (fun () -> sprintf "%i %O %i" a op.Str b |> compileAndRun)
+            let actual = catch (fun () -> sprintf "%i %O %i" a op.Str b |> compileAndRun<int>)
             let expected = catch (fun () -> op.Calc (a, b))
             actual = expected
         Check.QuickThrowOnFailure test
@@ -119,9 +119,9 @@ module Tests =
     [<Test>] 
     let ``check int/decima math operations`` () =
         let test (a:int) (op:MathOps) (b:decimal) =
-            let actual1 = catch (fun () ->sprintf "%O %O %O" a op.Str b |> compileAndRun)
+            let actual1 = catch (fun () ->sprintf "%O %O %O" a op.Str b |> compileAndRun<decimal>)
             let expected1 = catch (fun () ->op.Calc (decimal a, b))
-            let actual2 = catch (fun () ->sprintf "%O %O %O" b op.Str a |> compileAndRun)
+            let actual2 = catch (fun () ->sprintf "%O %O %O" b op.Str a |> compileAndRun<decimal>)
             let expected2 = catch (fun () ->op.Calc (b, decimal a))
             actual1 = expected1 && actual2 = expected2 
         Check.QuickThrowOnFailure test
@@ -129,28 +129,34 @@ module Tests =
     [<Test>] 
     let ``check int bool operations`` () =
         let test (a:int) (op:BoolOps) (b:int) =
-            let actual = catch (fun () -> sprintf "%i %O %i" a op.Str b |> compileAndRun)
+            let actual = catch (fun () -> sprintf "%i %O %i" a op.Str b |> compileAndRun<bool>)
             let expected = catch (fun () -> op.Calc (a, b))
-            actual = expected
+            Assert.AreEqual(expected, actual)
         Check.QuickThrowOnFailure test
         
     [<Test>] 
     let ``check int/decima bool operations`` () =
         let test (a:int) (op:BoolOps) (b:decimal) =
-            let actual1 = catch (fun () ->sprintf "%O %O %O" a op.Str b |> compileAndRun)
+            let actual1 = catch (fun () ->sprintf "%O %O %O" a op.Str b |> compileAndRun<bool>)
             let expected1 = catch (fun () ->op.Calc (decimal a, b))
-            let actual2 = catch (fun () ->sprintf "%O %O %O" b op.Str a |> compileAndRun)
+            let actual2 = catch (fun () ->sprintf "%O %O %O" b op.Str a |> compileAndRun<bool>)
             let expected2 = catch (fun () ->op.Calc (b, decimal a))
-            actual1 = expected1 && actual2 = expected2 
+            Assert.AreEqual(expected1, actual1)
+            Assert.AreEqual(expected2, actual2)
         Check.QuickThrowOnFailure test
 
     [<Test>] 
     let ``random tokens don't crash analyser`` () =
         let test (tokens : Tokenizer.Token list) =
             tokens |> Analyse.analyse' [] |> ignore
-            true
         Check.QuickThrowOnFailure test
 
+    
+    [<Test>] 
+    let ``random string doesn't crash tokenizer`` () =
+        let test str =
+            Tokenizer.tokenize str |> ignore
+        Check.QuickThrowOnFailure test
 
     open TypeChecker
     open Emitter

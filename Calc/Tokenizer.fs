@@ -132,5 +132,6 @@ let tokenize s =
                 tokenize' (s.Substring length) (pos + uint32 length) l
             else l |> List.rev |> removeWhitespaces |> Result.OK
         | _ -> Error (pos, sprintf "Cannot tokenize %s" s)
-                
-    tokenize' s 0u []
+    if System.String.IsNullOrEmpty s then
+        Error (0u, "Cannot parse an empty string")
+    else tokenize' s 0u []
