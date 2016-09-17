@@ -134,6 +134,10 @@ namespace Calc.Example.View
             {
                 { "number", new TypeChecker.RefDef("number", TypeChecker.Type.Integer) },
                 { "number 2", new TypeChecker.RefDef("number 2", TypeChecker.Type.Integer) },
+                { "decimal", new TypeChecker.RefDef("decimal", TypeChecker.Type.Decimal) },
+                { "decimal 2", new TypeChecker.RefDef("decimal 2", TypeChecker.Type.Decimal) },
+                //{ "text", new TypeChecker.RefDef("text", TypeChecker.Type.String) },
+                //{ "text 2", new TypeChecker.RefDef("text 2", TypeChecker.Type.String) },
                 { "calc", new TypeChecker.RefDef("calc", TypeChecker.Type.String) },
             };
 

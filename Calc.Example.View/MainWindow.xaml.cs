@@ -28,9 +28,14 @@ namespace Calc.Example.View
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            dataGrid.Columns.Add(new DataGridTextColumn() { Header = "Calculated", Binding = new Binding("calc") });
-            dataGrid.Columns.Add(new DataGridTextColumn() { Header = "number", Binding = new Binding("number") });
-            dataGrid.Columns.Add(new DataGridTextColumn() { Header = "number 2", Binding = new Binding("number 2") });
+            dataGrid.Columns.Add(new DataGridTextColumn() { Header = "Calculated", IsReadOnly = true, Binding = new Binding("calc") });
+            dataGrid.Columns.Add(new DataGridTextColumn() { Header = "number", Binding = new Binding("number") { Mode=BindingMode.TwoWay } });
+            dataGrid.Columns.Add(new DataGridTextColumn() { Header = "number 2", Binding = new Binding("number 2") { Mode = BindingMode.TwoWay } });
+            dataGrid.Columns.Add(new DataGridTextColumn() { Header = "decimal", Binding = new Binding("decimal") { Mode = BindingMode.TwoWay } });
+            dataGrid.Columns.Add(new DataGridTextColumn() { Header = "decimal 2", Binding = new Binding("decimal 2") { Mode = BindingMode.TwoWay } });
+
+            //dataGrid.Columns.Add(new DataGridTextColumn() { Header = "text", Binding = new Binding("text") { Mode = BindingMode.TwoWay } });
+            //dataGrid.Columns.Add(new DataGridTextColumn() { Header = "text 2", Binding = new Binding("text 2") { Mode = BindingMode.TwoWay } });
         }
     }
 }

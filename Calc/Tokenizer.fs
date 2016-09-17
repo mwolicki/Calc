@@ -129,12 +129,12 @@ let tokenize s =
         match toToken s with 
         | Some (token, length) when length > 0 -> 
             let l : TokenAddr list = (token, pos) :: curr
-            if s.Length <> length then
+            if l.Length > 1000 then
+                Error (0u, "Script is too long")
+            elif s.Length <> length then
                 tokenize' (s.Substring length) (pos + uint32 length) l
             else l |> List.rev |> removeWhitespaces |> Result.OK
         | _ -> Error (pos, sprintf "Cannot tokenize %s" s)
     if System.String.IsNullOrEmpty s then
         Error (0u, "Cannot parse an empty string")
-    elif s.Length > 1000 then
-        Error (0u, "Script is too long")
     else tokenize' s 0u []

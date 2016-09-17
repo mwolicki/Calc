@@ -50,9 +50,7 @@ module Compile
         ==> emitter
         |> Result.unwrap
 
-
     let compile<'a> funcs refs code = 
-        //let funcs = dictToMap funcs
         let refs = dictToMap refs
         getTypedExpr funcs refs code
         ==> Optimizer.optimizer
