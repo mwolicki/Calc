@@ -23,6 +23,7 @@ let (|IsReference|_|) = function
 
 let operatorPrecedence = 
     [ Plus, 10
+      Concat, 10
       Minus, 15
       Multiply, 20
       Divide, 20
@@ -30,9 +31,9 @@ let operatorPrecedence =
       Equals, 0
       Greater, 0
       Less, 0
-      //GreaterOrEqual, 0
-      //LessOrEqual, 0
-      //NotEqual, 0 
+      GreaterOrEqual, 0
+      LessOrEqual, 0
+      Inequality, 0 
     ] |> Map.ofList
 
 let rec applyOperatorPrecedence expr = 

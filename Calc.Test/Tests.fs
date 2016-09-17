@@ -42,6 +42,11 @@ module Tests =
     [<Test>]
     let ``1 is 1`` () = "1" == 1
     
+
+    [<Test>]
+    let ``'1' & '2' is "12"`` () = "'1' & '2'" == "12"
+
+
     [<Test>]
     let ```d long name` + 1 is 3m`` () = "`d long name` + 1" == 3m
 
@@ -113,13 +118,6 @@ module Tests =
     
     [<Test>] 
     let ``123.456!=123.4567 is true`` () = "123.456!=123.4567" == true
-
-    
-    [<Test>] 
-    let ``SIN`` () = 
-        for i=0 to 1000 do
-            sprintf "TEXT(SIN(%i))" i |> compileAndRun<string> |> printfn "%A"
-
 
     type MathOps = Add | Sub | Div | Mul
     with member op.Str =
