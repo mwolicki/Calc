@@ -9,15 +9,12 @@ type Type =
 | Decimal
 | Integer
 | Boolean
-| Unit
 with member t.GetBCLType =
         match t with
         | String -> typeof<string>
         | Decimal -> typeof<decimal>
         | Integer -> typeof<int>
         | Boolean -> typeof<bool>
-        | Unit -> typeof<unit>
-
 
 type TypedExpr = 
 | TConstStr of string
@@ -49,7 +46,6 @@ let getType t =
     elif typeof<System.Decimal> = t then Decimal
     elif typeof<System.Boolean> = t then Boolean
     elif typeof<System.Int32> = t then Integer
-    elif typeof<System.Void> = t then Unit
     else
         failwithf "Unsupported type %O %A" t.FullName t.IsGenericParameter
 type RefDef =

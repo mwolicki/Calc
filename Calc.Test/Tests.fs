@@ -262,7 +262,6 @@ module Tests =
             | String -> callMethod<string>  fs expr
             | Decimal -> callMethod<decimal>  fs expr
             | Boolean -> callMethod<bool>  fs expr
-            | Unit -> callMethod<unit>  fs expr
 
         let test (tokens : Analyse.Expr) =
             match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree defaultFuncs refs with
@@ -288,7 +287,6 @@ module Tests =
             | String -> compareWithOracle<string>
             | Decimal -> compareWithOracle<decimal>
             | Boolean -> compareWithOracle<bool>
-            | Unit -> compareWithOracle<unit>
             |> fun f -> f fs expr
 
         let test (tokens : Analyse.Expr) =

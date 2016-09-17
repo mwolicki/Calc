@@ -12,7 +12,6 @@ module private Optimizer =
     | Decimal ->  (v :?> decimal) |> number.Real |> TConstNum
     | Type.Integer ->  (v :?> int) |> number.Integer |> TConstNum
     | Boolean -> TConstBool (v :?> bool)
-    | Unit -> TConstStr (v :?> string)
 
     let isConst = function
     | TConstStr _
@@ -89,7 +88,7 @@ let optimizer (expr: TypedExpr) : TypedExpr =
                     match x with
                     | number.Integer x -> x.ToString() |> TConstStr
                     | number.Real x -> x.ToString() |> TConstStr
-                | x -> TConvertType (currentType, newType, expr)
+                | _ -> TConvertType (currentType, newType, expr)
             | Type.Integer, Decimal ->
                 match expr with
                 | TConstNum (number.Integer x) -> decimal x |> (number.Real >> TConstNum)

@@ -102,7 +102,6 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 | Integer -> "GetInt"
                 | Decimal -> "GetDecimal"
                 | Boolean -> "GetBoolean"
-                | x -> failwithf "Not supported yet type (%A) of reference" x
                 |> typeof<IReferenceAccessor>.GetMethod
             il.Emit OpCodes.Ldarg_0
             il.Emit(OpCodes.Ldstr, name)
@@ -124,7 +123,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 il.Emit (OpCodes.Newobj, ctor)
             | _ -> failwithf "Conversion between %A & %A is not supported" currentType newType
 
-        | TOperatorCall _
+        | _
             -> failwithf "Unsupported expression %A" expr
     ilBuild expr
     il.Emit OpCodes.Ret
