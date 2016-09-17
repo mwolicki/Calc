@@ -16,11 +16,10 @@ module Lib =
     let print a= printfn "%s" a
 
     [<Export("COS")>]
-    let cos = Math.Cos
+    let cos (a:decimal):decimal = Math.Cos (float a) |> decimal
     
     [<Export("SIN")>]
-    let sin = Math.Sin
-
+    let sin (a:decimal) = Math.Sin (float a) |> decimal
 
     [<Export("TEXT")>]
     let text (a:string) = a

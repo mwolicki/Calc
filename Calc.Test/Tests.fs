@@ -31,10 +31,10 @@ module Tests =
           member __.GetBoolean _ = false
           member __.GetString _ = "text"
           member __.GetDecimal _ = 2m }
-
+          
 
     let compileAndRun<'a> s = 
-        Compile.compile<'a> defaultFuncs refs s
+        Compile.compile'<'a> defaultFuncs refs s
         |> fun d -> d.Invoke accessor
 
     let (==) a (b:'a) = Assert.AreEqual(b, compileAndRun<'a> a)
@@ -113,6 +113,13 @@ module Tests =
     
     [<Test>] 
     let ``123.456!=123.4567 is true`` () = "123.456!=123.4567" == true
+
+    
+    [<Test>] 
+    let ``SIN`` () = 
+        for i=0 to 1000 do
+            sprintf "TEXT(SIN(%i))" i |> compileAndRun<string> |> printfn "%A"
+
 
     type MathOps = Add | Sub | Div | Mul
     with member op.Str =
@@ -194,7 +201,7 @@ module Tests =
     open Emitter
 
     let callMethod<'a> fs expr = 
-        generateDynamicType<'a> fs expr
+        (generateDynamicType<'a> fs expr :?> System.Func<IReferenceAccessor, 'a>)
         |> fun x -> x.Invoke accessor
         |> ignore
 

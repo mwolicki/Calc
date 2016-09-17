@@ -27,7 +27,6 @@ type TypedExpr =
 | TNegate of TypedExpr
 | TOperatorCall of operator * lhs:TypedExpr * rhs:TypedExpr * opType : Type
 | TReference of name:RefName * refType:Type
-| TGroup of TypedExpr
 | TConvertType of currentType: Type * newType: Type * expr:TypedExpr
 with 
     member expr.Type = 
@@ -40,8 +39,7 @@ with
         | TConvertType (newType = t) 
         | TReference (refType = t)
         | TFunctionCall (returnType = t) -> t
-        | TNegate expr 
-        | TGroup expr
+        | TNegate expr
             -> expr.Type 
 type FunName = string
 
@@ -49,17 +47,8 @@ type FunName = string
 let getType t =
     if typeof<System.String> = t then String
     elif typeof<System.Decimal> = t then Decimal
-    elif typeof<System.Double> = t then Decimal
-    elif typeof<System.Single> = t then Decimal
     elif typeof<System.Boolean> = t then Boolean
-    elif typeof<System.UInt64> = t then Integer
-    elif typeof<System.Int64> = t then Integer
-    elif typeof<System.UInt32> = t then Integer
     elif typeof<System.Int32> = t then Integer
-    elif typeof<System.UInt16> = t then Integer
-    elif typeof<System.Int16> = t then Integer
-    elif typeof<System.Byte> = t then Integer
-    elif typeof<System.SByte> = t then Integer
     elif typeof<System.Void> = t then Unit
     else
         failwithf "Unsupported type %O %A" t.FullName t.IsGenericParameter
@@ -97,15 +86,6 @@ let (|AreTypesCompatible|NotCompatibleTypes|) (expected, expr:TypedExpr) =
 
 let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr : Result<TypedExpr, string> =
     let rec toTypedSyntaxTree' expr : Result<TypedExpr, string> =
-        let (|IsILOperator|_|) = function
-        | OperatorCall (op, lhs, rhs) ->
-            match toTypedSyntaxTree' lhs, toTypedSyntaxTree' rhs with
-            | OK lhs, OK rhs when 
-                (lhs.Type = Integer && rhs.Type = Integer) ||
-                (lhs.Type = Boolean && rhs.Type = Boolean) ->
-                    Some(op, lhs, rhs)
-            | _ -> None
-        | _ -> None
 
         match expr with
         | ConstNum n -> TConstNum n |> OK
@@ -116,7 +96,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
             match refs.TryFind refName with
             | Some def -> TReference (refName, def.Type) |> OK
             | None -> "unknown reference " + refName |> Error
-        | Group e -> toTypedSyntaxTree' e |> Result.map TGroup 
+        | Group e -> toTypedSyntaxTree' e
         | Negate e -> 
             let mi = typeof<decimal>.GetMethod ("op_UnaryNegation", [| typeof<decimal>; |])
             
@@ -127,12 +107,6 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                 -> TFunctionCall (mi, Decimal, [expr])  |> OK
             | Error _ as e -> e
             | OK expr -> sprintf "Negation of type %A is not supported" expr.Type |> Error
-        | IsILOperator (op, lhs, rhs) ->
-            match op with
-            | Plus | Minus | Divide | Multiply | Concat ->
-                TOperatorCall (op, lhs, rhs, lhs.Type) |> OK
-            | Equals | Greater | Less | Inequality | LessOrEqual | GreaterOrEqual -> 
-                TOperatorCall (op, lhs, rhs, Boolean) |> OK
         | OperatorCall (op, lhs, rhs) ->
             let getFunctionCall (lhs:TypedExpr) (rhs:TypedExpr) =
                 let (|MethodInfo|_|) name (t:Type)=
@@ -163,6 +137,13 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                 -> Error txt
             | OK lhs, OK rhs ->
                 match (lhs.Type, rhs), (rhs.Type, lhs) with
+                | (Integer, rhs), (Integer, lhs)
+                | (Boolean, rhs), (Boolean, lhs) ->
+                    match op with
+                    | Plus | Minus | Divide | Multiply | Concat ->
+                        TOperatorCall (op, lhs, rhs, lhs.Type) |> OK
+                    | Equals | Greater | Less | Inequality | LessOrEqual | GreaterOrEqual -> 
+                        TOperatorCall (op, lhs, rhs, Boolean) |> OK
                 | AreTypesCompatible rhs, _ -> getFunctionCall lhs rhs
                 | _, AreTypesCompatible lhs -> getFunctionCall lhs rhs
                 | NotCompatibleTypes (a,b), _ 

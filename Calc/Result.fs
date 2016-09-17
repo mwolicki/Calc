@@ -17,3 +17,5 @@ module Result =
     let map f = function
     | OK x -> f x |> OK
     | Error e -> Error e
+
+    let(==>) a b = map b a

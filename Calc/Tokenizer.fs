@@ -63,7 +63,8 @@ let (|IsNumber|_|) s =
         | true, v -> Some (Real v, pos)
         | _ -> None
     match s with
-    | IsRegex "^[0-9][0-9_]*\.[0-9_]+" (str, pos) ->
+    | IsRegex "^[0-9][0-9_]*\.[0-9_]*" (str, pos)
+    | IsRegex "^\.[0-9_]+" (str, pos) ->
         isDecimal str pos
     | IsRegex "^[0-9][0-9_]*" (str, pos) ->
         match Int32.TryParse (str.Replace("_", "")) with
@@ -134,4 +135,6 @@ let tokenize s =
         | _ -> Error (pos, sprintf "Cannot tokenize %s" s)
     if System.String.IsNullOrEmpty s then
         Error (0u, "Cannot parse an empty string")
+    elif s.Length > 1000 then
+        Error (0u, "Script is too long")
     else tokenize' s 0u []

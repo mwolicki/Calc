@@ -9,6 +9,7 @@
 
 module Compile
 open TypeChecker
+open Core.Result
 
 open System.Reflection
 open Calc.Lib
@@ -30,10 +31,23 @@ let defaultFuncs =
     |> Array.map (fst >> (fun x-> x.Name, x))
     |> Map.ofArray
 
+open System.Collections.Generic
 
-let compile<'a> funcs refs = 
-    Tokenizer.tokenize
-    >> Analyse.analyse
-    >> TypeChecker.toTypedSyntaxTree funcs refs
-    >> Result.unwrap
-    >> Emitter.generateDynamicType<'a> funcs
+let dictToMap (dict:IReadOnlyDictionary<_,_>) =
+    dict |> Seq.map(fun (KeyValue kv) -> kv) |> Map.ofSeq
+
+let compile'<'a> funcs refs code = 
+    let emitter x =  Emitter.generateDynamicType funcs x :?> System.Func<IReferenceAccessor, 'a>
+    Tokenizer.tokenize code
+    |> Analyse.analyse
+    |> TypeChecker.toTypedSyntaxTree funcs refs
+    ==> emitter
+    |> Result.unwrap
+
+let compile<'a> funcs refs code = 
+    //let funcs = dictToMap funcs
+    let refs = dictToMap refs
+    Tokenizer.tokenize code
+    |> Analyse.analyse
+    |> TypeChecker.toTypedSyntaxTree funcs refs
+    ==> Emitter.generateDynamicType funcs

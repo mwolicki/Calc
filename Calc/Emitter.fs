@@ -83,7 +83,6 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 il.Emit (OpCodes.Newobj, ctor)
 
         | TConstStr s -> il.Emit(OpCodes.Ldstr, s)
-        | TGroup expr -> ilBuild expr
         | TNegate expr when expr.Type = TypeChecker.Integer || expr.Type = TypeChecker.Boolean -> 
             ilBuild expr
             il.Emit OpCodes.Neg
@@ -130,7 +129,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
 let generateDynamicType<'a> (fs:Map<FunName, FunDef>) (expr:TypedExpr) =
     let assemblyNumber = Numbers.getAssemblyNumber()
     let assemblyName = sprintf "emit-calc-%i.dll" assemblyNumber
-    let builder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName assemblyName, AssemblyBuilderAccess.RunAndSave)
+    let builder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName assemblyName, AssemblyBuilderAccess.RunAndCollect)
     
     let m = builder.DefineDynamicModule (assemblyName, true)
 
@@ -147,4 +146,8 @@ let generateDynamicType<'a> (fs:Map<FunName, FunDef>) (expr:TypedExpr) =
 //    builder.Save assemblyName
 
     let mi = type'.GetMethod name
-    mi.CreateDelegate(typeof<System.Func<IReferenceAccessor, 'a>>) :?> System.Func<IReferenceAccessor, 'a>
+
+    let type' = typedefof<System.Func<int,int>>.MakeGenericType(typeof<IReferenceAccessor>, expr.Type.GetBCLType)
+
+    mi.CreateDelegate(type')
+        
