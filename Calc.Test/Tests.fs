@@ -295,7 +295,7 @@ module Tests =
             | Core.Error e -> printfn "%A" e
 
         Arb.register<Generators>() |> ignore
-        Check.One( { Config.QuickThrowOnFailure with MaxTest = 150 },test)
+        Check.One( { Config.QuickThrowOnFailure with MaxTest = 400 },test)
 
 
 

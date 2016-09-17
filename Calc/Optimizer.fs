@@ -45,7 +45,7 @@ let optimizer (expr: TypedExpr) : TypedExpr =
                         | _ , ps -> 
                             mi.Invoke(null, ps |> List.map getValue |> Array.ofList)
                     toConst v returnType
-                with :? System.OverflowException ->
+                with :? System.Reflection.TargetInvocationException ->
                     //TODO: Handle it somewhow - currently we will crash during runtime...
                     TFunctionCall(mi, returnType, ps)
             else
