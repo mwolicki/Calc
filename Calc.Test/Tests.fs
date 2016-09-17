@@ -31,7 +31,6 @@ module Tests =
           member __.GetBoolean _ = false
           member __.GetString _ = "text"
           member __.GetDecimal _ = 2m }
-          
 
     let compileAndRun<'a> s = 
         Compile.compile'<'a> defaultFuncs refs s
@@ -41,10 +40,15 @@ module Tests =
 
     [<Test>]
     let ``1 is 1`` () = "1" == 1
-    
 
     [<Test>]
     let ``'1' & '2' is "12"`` () = "'1' & '2'" == "12"
+
+    [<Test>]
+    let ``1>=1 is true`` () = "1>=1" == true
+
+    [<Test>]
+    let ``1<=1 is true`` () = "1<=1" == true
 
 
     [<Test>]
@@ -100,9 +104,6 @@ module Tests =
 
     [<Test>] 
     let ``'TEXT' & "text" is "TEXTtext"`` () = "'TEXT' & \"text\"" == "TEXTtext"
-    
-    [<Test>] 
-    let ``1>=1 is true`` () = "1>=1" == true
 
     [<Test>] 
     let ``1.0>=1.0 is true`` () = "1.0>=1.0" == true
@@ -199,11 +200,47 @@ module Tests =
     open Emitter
 
     let callMethod<'a> fs expr = 
-        (generateDynamicType<'a> fs expr :?> System.Func<IReferenceAccessor, 'a>)
-        |> fun x -> x.Invoke accessor
-        |> ignore
+        try
+            (generateDynamicType<'a> fs expr :?> System.Func<IReferenceAccessor, 'a>)
+            |> fun x -> x.Invoke accessor
+            |> ignore
+        with 
+            | :? System.OverflowException -> ()
+//            | :? System.DivideByZeroException -> ()
 
     open Analyse
+
+    type Generators =
+        static member Version() =
+            
+            let availableReferences = Gen.oneof [ Gen.map Reference (refs |> Seq.map (fun kvp -> gen { return kvp.Key }) |> Gen.oneof) ]
+            let availableFuncs = defaultFuncs |> Seq.map(fun kvp ->  kvp.Key, kvp.Value.Parameters.Length) |> Map.ofSeq
+            let aFuncs = defaultFuncs |> Seq.map (fun kvp -> gen { return kvp.Key }) |> Gen.oneof
+
+            let generator () =
+                let genSingle () =
+                    Gen.oneof [ Gen.map ConstNum Arb.generate<Tokenizer.number>
+                                Gen.map ConstBool Arb.generate<bool>
+                                Gen.map ConstStr Arb.generate<string>
+                                availableReferences ]
+
+                let rec generator = function
+                | 0 -> genSingle()
+                | n ->
+                    let generator () = generator (n/3)
+                    Gen.oneof [ Gen.map3 (fun a b c -> OperatorCall(a,b,c)) Arb.generate<Tokenizer.operator> (generator()) (generator())
+                                Gen.map4 (fun f a b c ->
+                                            match availableFuncs.[f] with
+                                            | 0 -> FunctionCall(f, [])
+                                            | 1 -> FunctionCall(f, [a])
+                                            | 2 -> FunctionCall(f, [a; b])
+                                            | _ -> FunctionCall(f, [a; b; c])) aFuncs (generator()) (generator()) (generator())
+                                genSingle()
+                                Gen.map Negate (generator())
+                                Gen.map Group (generator()) ]
+                Gen.sized generator
+            Arb.fromGen (generator())
+
     [<Test>] 
     let ``random AST dont crash analyser`` () =
         let callMethod fs (expr:TypedExpr)  =
@@ -214,31 +251,11 @@ module Tests =
             | Boolean -> callMethod<bool>  fs expr
             | Unit -> callMethod<unit>  fs expr
 
-        let rec getRefs (expr: Analyse.Expr) =
-            match expr with
-            | ConstStr _
-            | ConstNum _
-            | ConstBool _ -> Set.empty, Set.empty
-            | FunctionCall (name, es) ->
-                let init = Set.empty, Set [name]
-                es
-                |> List.map getRefs 
-                |> List.fold (fun (rs, fs) (rs', fs') -> Set.union rs rs', Set.union fs fs') init
-            | OperatorCall (_, a, b) ->
-                 let rs, fs = getRefs a
-                 let rs', fs' = getRefs b
-                 Set.union rs rs', Set.union fs fs'
-            | Reference name -> Set [name], Set.empty
-            | Negate e
-            | Group e -> getRefs e
-
         let test (tokens : Analyse.Expr) =
-            let rs, fs = getRefs tokens
-            let mi = defaultFuncs.["TEXT"].MethodInfo
-            let fs = fs |> Seq.map (fun x->x, {Name = x; MethodInfo = mi}) |> Map.ofSeq
-            let rs = rs |> Seq.map (fun x->x, {Name = x; Type = Integer}) |> Map.ofSeq
-
-            match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree fs rs with
-            | Core.OK x -> callMethod fs x
+            match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree defaultFuncs refs with
+            | Core.OK x -> callMethod defaultFuncs x
             | Core.Error e -> printfn "%A" e
-        Check.QuickThrowOnFailure test
+
+        Arb.register<Generators>() |> ignore
+        Check.One( { Config.QuickThrowOnFailure with MaxTest = 150 },test)
+
