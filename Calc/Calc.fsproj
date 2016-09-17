@@ -53,6 +53,8 @@
     <Compile Include="Tokenizer.fs" />
     <Compile Include="Analyser.fs" />
     <Compile Include="TypeChecker.fs" />
+    <Compile Include="Eval.fs" />
+    <Compile Include="Optimizer.fs" />
     <Compile Include="Emitter.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

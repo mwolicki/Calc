@@ -140,10 +140,11 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                 | (Integer, rhs), (Integer, lhs)
                 | (Boolean, rhs), (Boolean, lhs) ->
                     match op with
-                    | Plus | Minus | Divide | Multiply | Concat ->
+                    | Plus | Minus | Divide | Multiply | Concat when lhs.Type = Integer ->
                         TOperatorCall (op, lhs, rhs, lhs.Type) |> OK
                     | Equals | Greater | Less | Inequality | LessOrEqual | GreaterOrEqual -> 
                         TOperatorCall (op, lhs, rhs, Boolean) |> OK
+                    | _ -> sprintf "Operator %A is not supported for type %A" op lhs.Type |> Error
                 | AreTypesCompatible rhs, _ -> getFunctionCall lhs rhs
                 | _, AreTypesCompatible lhs -> getFunctionCall lhs rhs
                 | NotCompatibleTypes (a,b), _ 

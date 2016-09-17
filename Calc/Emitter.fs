@@ -72,7 +72,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
         let emitInt = emitInt il
         match expr with
         | TConstBool true -> emitInt 1
-        | TConstBool false -> emitInt 2
+        | TConstBool false -> emitInt 0
         | TConstNum type' ->
             match type' with
             | Tokenizer.number.Integer v -> emitInt v
@@ -83,9 +83,13 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 il.Emit (OpCodes.Newobj, ctor)
 
         | TConstStr s -> il.Emit(OpCodes.Ldstr, s)
-        | TNegate expr when expr.Type = TypeChecker.Integer || expr.Type = TypeChecker.Boolean -> 
+        | TNegate expr when expr.Type = TypeChecker.Integer -> 
             ilBuild expr
             il.Emit OpCodes.Neg
+        | TNegate expr when expr.Type = TypeChecker.Boolean -> 
+            ilBuild expr
+            il.Emit OpCodes.Ldc_I4_0
+            il.Emit OpCodes.Ceq
         | IsSimpleOperation (opCodes, lhs, rhs) ->
             ilBuild lhs
             ilBuild rhs

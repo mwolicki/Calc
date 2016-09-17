@@ -1,10 +1,11 @@
 ﻿namespace Calc.Test
-open NUnit.Framework
-open FsCheck
+
 module Tests =
     open Calc.Lib
     open TypeChecker
     open Compile
+    open NUnit.Framework
+    open FsCheck
 
     let refs =
         [ { Name = "i1"; Type = Integer }
@@ -19,15 +20,13 @@ module Tests =
         |> List.map (fun x-> x.Name, x)
         |> Map.ofList
 
-    let rnd = new System.Random()
-
     let accessor = 
         { new IReferenceAccessor with
           member __.GetInt name = 
             match name with
             | "i1" -> 1
-            | "i2" -> rnd.Next ()
-            | _ -> -5
+            | "i2" -> 2
+            | n -> n.GetHashCode()
           member __.GetBoolean _ = false
           member __.GetString _ = "text"
           member __.GetDecimal _ = 2m }
@@ -62,6 +61,15 @@ module Tests =
     
     [<Test>]
     let ``1.0 is 1m`` () = "1.0" == 1m
+    
+    [<Test>]
+    let ``-true is false`` () = "-true" == false
+
+    [<Test>]
+    let ``-false is true`` () = "-false" == true
+
+    [<Test>]
+    let ``-('a'<>'b') is false`` () = "-('a'<>'b')" == false
     
     [<Test>] 
     let ``'text abc' is "text abc"`` () = "'text abc'" == "text abc"
@@ -199,14 +207,19 @@ module Tests =
     open TypeChecker
     open Emitter
 
+    
+
     let callMethod<'a> fs expr = 
+        let expr = Optimizer.optimizer expr
         try
             (generateDynamicType<'a> fs expr :?> System.Func<IReferenceAccessor, 'a>)
             |> fun x -> x.Invoke accessor
-            |> ignore
+            |> box |> Some
         with 
-            | :? System.OverflowException -> ()
-//            | :? System.DivideByZeroException -> ()
+            | :? System.OverflowException 
+            | :? System.DivideByZeroException 
+            | :? System.FormatException
+               -> None
 
     open Analyse
 
@@ -253,9 +266,50 @@ module Tests =
 
         let test (tokens : Analyse.Expr) =
             match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree defaultFuncs refs with
-            | Core.OK x -> callMethod defaultFuncs x
+            | Core.OK x -> callMethod defaultFuncs x |> ignore
+            | Core.Error e -> ()
+
+        Arb.register<Generators>() |> ignore
+        Check.One({ Config.QuickThrowOnFailure with MaxTest = 100 },test)
+
+
+    
+    let compareWithOracle<'a> fs expr = 
+            let actual = callMethod<'a> fs expr
+            let expected = Eval.eval expr accessor
+            Assert.AreEqual(expected, actual)
+
+    [<Test>] 
+    let ``compere results with oracle`` () =
+
+        let test (expr:TypedExpr) fs =
+            match expr.Type with
+            | Type.Integer ->compareWithOracle<int>
+            | String -> compareWithOracle<string>
+            | Decimal -> compareWithOracle<decimal>
+            | Boolean -> compareWithOracle<bool>
+            | Unit -> compareWithOracle<unit>
+            |> fun f -> f fs expr
+
+        let test (tokens : Analyse.Expr) =
+            match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree defaultFuncs refs with
+            | Core.OK x -> test x defaultFuncs
             | Core.Error e -> printfn "%A" e
 
         Arb.register<Generators>() |> ignore
         Check.One( { Config.QuickThrowOnFailure with MaxTest = 150 },test)
+
+
+
+
+//    let x = getTypedExpr defaultFuncs refs "TEXT(1+3*6+SIN(100)-21+'this is my text' & 'hello!')" |> Core.Result.unwrap
+//
+//    let c = compile'<string> defaultFuncs refs "TEXT(1+3*6+SIN(100)-21+'this is my text' & 'hello!')"
+//
+//
+//    for i=0 to 100000000 do
+//        c.Invoke(accessor) |> ignore
+//
+//    for i=0 to 100000000 do
+//        Eval.eval x accessor |> ignore
 
