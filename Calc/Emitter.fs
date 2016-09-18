@@ -83,6 +83,17 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 il.Emit (OpCodes.Newobj, ctor)
 
         | TConstStr s -> il.Emit(OpCodes.Ldstr, s)
+        | TConstDateTime dt ->
+            il.Emit(OpCodes.Ldc_I8, dt.ToBinary())
+            let ctor = typeof<System.DateTime>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<int64>|], null)
+            il.Emit (OpCodes.Newobj, ctor)
+        | TConstDate dt ->
+            System.DateTime(dt.Year, dt.Month, dt.Day)
+            |> TConstDateTime
+            |> ilBuild 
+            let ctor = typeof<Date>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<System.DateTime>|], null)
+            il.Emit (OpCodes.Newobj, ctor)
+
         | TNegate expr when expr.Type = TypeChecker.Integer -> 
             ilBuild expr
             il.Emit OpCodes.Neg
@@ -102,6 +113,8 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 | Integer -> "GetInt"
                 | Decimal -> "GetDecimal"
                 | Boolean -> "GetBoolean"
+                | Date -> "GeDate"
+                | DateTime -> "GeDateTime"
                 |> typeof<IReferenceAccessor>.GetMethod
             il.Emit OpCodes.Ldarg_0
             il.Emit(OpCodes.Ldstr, name)
@@ -121,6 +134,8 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
             | Integer, Decimal ->
                 let ctor = typeof<System.Decimal>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<int>|], null)
                 il.Emit (OpCodes.Newobj, ctor)
+            | Date, DateTime ->
+                failwith "TODO: add support for conversion between Date & DateTime"
             | _ -> failwithf "Conversion between %A & %A is not supported" currentType newType
 
         | _

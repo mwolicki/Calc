@@ -192,5 +192,9 @@ namespace Calc.Example.View
         public int GetInt(string value) => GetValue<int>(value);
 
         public string GetString(string value) => GetValue<string>(value);
+
+        public Date GetDate(string value) => new Date(2,2,2);
+
+        public DateTime GetDateTime(string value) => DateTime.Now;
     }
 }

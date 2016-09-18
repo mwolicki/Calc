@@ -1,10 +1,34 @@
 ﻿namespace Calc.Lib
 
+[<Struct; CustomEquality; NoComparison>]
+type Date =
+    val private DateTime : System.DateTime
+
+    member date.Year = date.DateTime.Year
+    member date.Month = date.DateTime.Month
+    member date.Day = date.DateTime.Day
+
+    override date.ToString() = date.DateTime.ToShortDateString()
+    override date.Equals o =
+        match o with
+        | :? Date as s -> date.DateTime.Equals s.DateTime
+        | _ -> false
+    override date.GetHashCode () = date.DateTime.GetHashCode ()
+    new (year, month, day) = { DateTime = System.DateTime(year, month, day) }
+    new (dt:System.DateTime) = { DateTime =  System.DateTime(dt.Year, dt.Month, dt.Day) }
+
+
+
 type IReferenceAccessor =
     abstract member GetInt : string -> int
     abstract member GetString : string -> string
     abstract member GetBoolean : string -> bool
     abstract member GetDecimal : string -> decimal
+    abstract member GetDateTime : string -> System.DateTime
+    abstract member GetDate: string -> Date
+
+
+
 
 module Lib = 
     open System

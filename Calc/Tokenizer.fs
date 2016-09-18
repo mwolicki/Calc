@@ -2,6 +2,7 @@
 open System
 open System.Text.RegularExpressions
 open Core
+open Calc.Lib
 
 type operator = Plus | Minus | Multiply | Divide (*| Power*) | Equals | Inequality | Greater | Less | GreaterOrEqual | LessOrEqual  | Concat
 
@@ -13,6 +14,8 @@ type Token =
     | Bracket of brakcet
     | Seperator of char
     | NumberLiteral of number
+    | DateLiteral of Date
+    | DateTimeLiteral of DateTime
     | Text of string
     | StringLiteral of string
     | BoolLiteral of bool
@@ -39,6 +42,24 @@ let (|IsBoolLiteral|_|) s =
     | StartsWith "false" _ -> Some (false, 5)
     | _ -> None
     |> Option.map (fun (b,i) -> BoolLiteral b, i)
+
+    
+let (|IsDateTimeLiteral|_|) s =
+    match s with
+    | IsRegex "^\[[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\]" (str, i) ->
+        match DateTime.TryParse (str.Substring(1, i-2)) with
+        | true,  dt -> (DateTimeLiteral dt, i) |>Some
+        | _ -> None
+    | _ -> None
+
+
+let (|IsDateLiteral|_|) s =
+    match s with
+    | IsRegex "^\[[0-9]{4}-[0-9]{2}-[0-9]{2}\]" (str, i) ->
+        match DateTime.TryParse (str.Substring(1, i-2)) with
+        | true,  dt -> (DateLiteral (Date dt), i) |>Some
+        | _ -> None
+    | _ -> None
 
 let (|IsStrLiteral|_|) s =
     match s with
@@ -115,6 +136,8 @@ let toToken =
     | IsOperator t
     | IsSeperator t
     | IsBoolLiteral t
+    | IsDateTimeLiteral t
+    | IsDateLiteral t
     | IsNumber t
     | IsStr t
     | IsStrLiteral t

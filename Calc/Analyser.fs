@@ -1,6 +1,7 @@
 ﻿module Analyse
 open Tokenizer
 open Core
+open Calc.Lib
 
 type FunctionName = string
 type RefName = string
@@ -9,6 +10,8 @@ type Expr =
 | ConstStr of string
 | ConstNum of number
 | ConstBool of bool
+| ConstDate of Date
+| ConstDateTime of System.DateTime
 | FunctionCall of name:FunctionName * Expr list
 | Negate of Expr
 | OperatorCall of operator * left:Expr * right:Expr 
@@ -41,6 +44,8 @@ let rec applyOperatorPrecedence expr =
     | ConstBool _
     | ConstNum _
     | ConstStr _
+    | ConstDate _
+    | ConstDateTime _
     | Reference _
     | Negate _
         -> expr
@@ -99,6 +104,8 @@ and (|IsLiteral|_|) = function
     | NumberLiteral n :: ts -> Some (ConstNum n, ts) 
     | BoolLiteral b :: ts -> Some (ConstBool b, ts)
     | Text s :: ts -> Some (ConstStr s, ts)
+    | DateLiteral s :: ts -> Some (ConstDate s, ts)
+    | DateTimeLiteral s :: ts -> Some (ConstDateTime s, ts)
     | _ -> None
 and (|Analyse|_|) (t:Token list)= 
     match analyse' [] t with

@@ -29,16 +29,22 @@ module Tests =
             | n -> n.GetHashCode()
           member __.GetBoolean _ = false
           member __.GetString _ = "text"
-          member __.GetDecimal _ = 2m }
+          member __.GetDecimal _ = 2m
+          member __.GetDate _ = Calc.Lib.Date(1,2,3)
+          member __.GetDateTime _ = System.DateTime.Now }
 
     let compileAndRun<'a> s = 
         Compile.compile'<'a> defaultFuncs refs s
         |> fun d -> d.Invoke accessor
 
     let (==) a (b:'a) = Assert.AreEqual(b, compileAndRun<'a> a)
-
+    
     [<Test>]
     let ``1 is 1`` () = "1" == 1
+
+    [<Test>]
+    let ``[2016-09-11] is Date(2016-09-11)`` () = "[2016-09-11]" == Calc.Lib.Date(2016,09,11)
+
 
     [<Test>]
     let ``'1' & '2' is "12"`` () = "'1' & '2'" == "12"
@@ -223,6 +229,13 @@ module Tests =
 
     open Analyse
 
+
+
+
+    type DateGenerators =
+        static member Version() =
+            Gen.map (Calc.Lib.Date) Arb.generate<System.DateTime> |> Arb.fromGen
+
     type Generators =
         static member Version() =
             
@@ -235,6 +248,8 @@ module Tests =
                     Gen.oneof [ Gen.map ConstNum Arb.generate<Tokenizer.number>
                                 Gen.map ConstBool Arb.generate<bool>
                                 Gen.map ConstStr Arb.generate<string>
+                                Gen.map ConstDate Arb.generate<Calc.Lib.Date>
+                                Gen.map ConstDateTime Arb.generate<System.DateTime>
                                 availableReferences ]
 
                 let rec generator = function
@@ -262,12 +277,15 @@ module Tests =
             | String -> callMethod<string>  fs expr
             | Decimal -> callMethod<decimal>  fs expr
             | Boolean -> callMethod<bool>  fs expr
+            | Date -> callMethod<Date>  fs expr
+            | DateTime -> callMethod<System.DateTime>  fs expr
 
         let test (tokens : Analyse.Expr) =
             match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree defaultFuncs refs with
             | Core.OK x -> callMethod defaultFuncs x |> ignore
             | Core.Error e -> ()
 
+        Arb.register<DateGenerators>() |> ignore
         Arb.register<Generators>() |> ignore
         Check.One({ Config.QuickThrowOnFailure with MaxTest = 100 },test)
 
@@ -287,6 +305,10 @@ module Tests =
             | String -> compareWithOracle<string>
             | Decimal -> compareWithOracle<decimal>
             | Boolean -> compareWithOracle<bool>
+            | Date -> compareWithOracle<Date>
+            | DateTime -> compareWithOracle<System.DateTime>
+
+
             |> fun f -> f fs expr
 
         let test (tokens : Analyse.Expr) =
@@ -294,6 +316,8 @@ module Tests =
             | Core.OK x -> test x defaultFuncs
             | Core.Error e -> printfn "%A" e
 
+        
+        Arb.register<DateGenerators>() |> ignore
         Arb.register<Generators>() |> ignore
         Check.One( { Config.QuickThrowOnFailure with MaxTest = 400 },test)
 

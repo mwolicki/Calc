@@ -3,23 +3,30 @@ open Analyse
 open Tokenizer
 open Core
 open System.Reflection
+open Calc.Lib
 
 type Type =
 | String
 | Decimal
 | Integer
 | Boolean
+| Date
+| DateTime
 with member t.GetBCLType =
         match t with
         | String -> typeof<string>
         | Decimal -> typeof<decimal>
         | Integer -> typeof<int>
         | Boolean -> typeof<bool>
+        | Date -> typeof<Date>
+        | DateTime -> typeof<System.DateTime>
 
 type TypedExpr = 
 | TConstStr of string
 | TConstNum of number
 | TConstBool of bool
+| TConstDate of Date
+| TConstDateTime of System.DateTime
 | TFunctionCall of methodInfo:MethodInfo * returnType:Type * TypedExpr list
 | TNegate of TypedExpr
 | TOperatorCall of operator * lhs:TypedExpr * rhs:TypedExpr * opType : Type
@@ -28,6 +35,8 @@ type TypedExpr =
 with 
     member expr.Type = 
         match expr with
+        | TConstDate _ -> Date
+        | TConstDateTime _ -> DateTime
         | TConstBool _ -> Boolean
         | TConstStr _ -> String
         | TConstNum (number.Integer _) -> Integer
@@ -46,6 +55,7 @@ let getType t =
     elif typeof<System.Decimal> = t then Decimal
     elif typeof<System.Boolean> = t then Boolean
     elif typeof<System.Int32> = t then Integer
+    elif typeof<System.DateTime> = t then DateTime
     else
         failwithf "Unsupported type %O %A" t.FullName t.IsGenericParameter
 type RefDef =
@@ -70,6 +80,9 @@ let rec areCompatibleTypes actual expected =
     | Decimal, String
     | Integer, String
     | Boolean, String
+    | Date, DateTime
+    | Date, String
+    | DateTime, String
         -> true
     | _ -> false
 
@@ -88,6 +101,8 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
         | ConstStr s when isNull s -> Error "string literal cannot be <null>"
         | ConstStr s -> TConstStr s |> OK
         | ConstBool b -> TConstBool b |> OK
+        | ConstDate d -> TConstDate d |> OK
+        | ConstDateTime b -> TConstDateTime b |> OK
         | Reference refName  when refName <> null -> 
             match refs.TryFind refName with
             | Some def -> TReference (refName, def.Type) |> OK

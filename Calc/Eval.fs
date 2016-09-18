@@ -96,6 +96,8 @@ let eval (expr:TypedExpr) (accessor:IReferenceAccessor) =
         | TConstNum (number.Real i) -> box i
         | TConstStr str -> box str
         | TConstBool b -> box b
+        | TConstDate b -> box b
+        | TConstDateTime b -> box b
         | TOperatorCall (op, lhs, rhs, _) ->
             let lhs = eval' lhs
             let rhs = eval' rhs
@@ -118,12 +120,15 @@ let eval (expr:TypedExpr) (accessor:IReferenceAccessor) =
             | String -> accessor.GetString name |> box
             | Boolean -> accessor.GetBoolean name |> box
             | Decimal -> accessor.GetDecimal name |> box
+            | Date -> accessor.GetDate name |> box
+            | DateTime -> accessor.GetDateTime name |> box
             | Type.Integer -> accessor.GetInt name |> box
         | TConvertType (currentType, toType, e) ->
             let v = eval' e
             match currentType, toType with
             | _, String -> v.ToString() |> box
             | Type.Integer, Decimal -> v :?> int |> decimal |> box
+            | Date, DateTime -> v :?> Date |> (fun x->System.DateTime(x.Year, x.Month, x.Day)) |> box
             | _ -> failwithf "conversion between %A and %A is not supported" currentType toType
             
         | TFunctionCall (mi, _, es) ->

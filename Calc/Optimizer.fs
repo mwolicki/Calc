@@ -12,10 +12,14 @@ module private Optimizer =
     | Decimal ->  (v :?> decimal) |> number.Real |> TConstNum
     | Type.Integer ->  (v :?> int) |> number.Integer |> TConstNum
     | Boolean -> TConstBool (v :?> bool)
+    | DateTime -> TConstDateTime (v :?> System.DateTime)
+    | Date -> TConstDate (v :?> Calc.Lib.Date)
 
     let isConst = function
     | TConstStr _
     | TConstNum _
+    | TConstDate _
+    | TConstDateTime _
     | TConstBool _ -> true
     | _ -> false
 
@@ -24,6 +28,8 @@ module private Optimizer =
     | TConstNum (number.Integer i) -> box i
     | TConstNum (number.Real r) -> box r
     | TConstBool b -> box b
+    | TConstDate b -> box b
+    | TConstDateTime b -> box b
     | _ -> failwith "Cannot get value! Something went wrong here..."
 
 let optimizer (expr: TypedExpr) : TypedExpr =
@@ -33,6 +39,8 @@ let optimizer (expr: TypedExpr) : TypedExpr =
         | TReference (_)
         | TConstStr _
         | TConstNum _
+        | TConstDate _
+        | TConstDateTime _
         | TConstBool _ -> expr
         | TFunctionCall (mi, returnType, ps) ->
             let ps = ps |> List.map optimizer'
@@ -92,6 +100,10 @@ let optimizer (expr: TypedExpr) : TypedExpr =
             | Type.Integer, Decimal ->
                 match expr with
                 | TConstNum (number.Integer x) -> decimal x |> (number.Real >> TConstNum)
+                | _ -> TConvertType (currentType, newType, expr)
+            | Type.Date, DateTime ->
+                match expr with
+                | TConstDate d -> System.DateTime(d.Year, d.Month, d.Day) |> TConstDateTime
                 | _ -> TConvertType (currentType, newType, expr)
             | _ -> TConvertType (currentType, newType, expr)
 
