@@ -84,7 +84,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
 
         | TConstStr s -> il.Emit(OpCodes.Ldstr, s)
         | TConstDateTime dt ->
-            il.Emit(OpCodes.Ldc_I8, dt.ToBinary())
+            il.Emit(OpCodes.Ldc_I8, dt.Ticks)
             let ctor = typeof<System.DateTime>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<int64>|], null)
             il.Emit (OpCodes.Newobj, ctor)
         | TConstDate dt ->
@@ -115,6 +115,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 | Boolean -> "GetBoolean"
                 | Date -> "GeDate"
                 | DateTime -> "GeDateTime"
+                | _ -> failwith "Cannot reference UserDefined types"
                 |> typeof<IReferenceAccessor>.GetMethod
             il.Emit OpCodes.Ldarg_0
             il.Emit(OpCodes.Ldstr, name)

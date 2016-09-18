@@ -12,6 +12,7 @@ type Type =
 | Boolean
 | Date
 | DateTime
+| UserDefined of System.Type
 with member t.GetBCLType =
         match t with
         | String -> typeof<string>
@@ -20,6 +21,17 @@ with member t.GetBCLType =
         | Boolean -> typeof<bool>
         | Date -> typeof<Date>
         | DateTime -> typeof<System.DateTime>
+        | UserDefined t -> t
+     static member ToType t =
+        if typeof<System.String> = t then String
+        elif typeof<System.Decimal> = t then Decimal
+        elif typeof<System.Boolean> = t then Boolean
+        elif typeof<System.Int32> = t then Integer
+        elif typeof<System.DateTime> = t then DateTime
+        elif typeof<Date> = t then Date
+        else
+            UserDefined t
+        
 
 type TypedExpr = 
 | TConstStr of string
@@ -50,14 +62,7 @@ with
 type FunName = string
 
 
-let getType t =
-    if typeof<System.String> = t then String
-    elif typeof<System.Decimal> = t then Decimal
-    elif typeof<System.Boolean> = t then Boolean
-    elif typeof<System.Int32> = t then Integer
-    elif typeof<System.DateTime> = t then DateTime
-    else
-        failwithf "Unsupported type %O %A" t.FullName t.IsGenericParameter
+
 type RefDef =
     { Name : RefName
       Type : Type }
@@ -70,19 +75,15 @@ with
         def.MethodInfo.GetParameters ()
         |> Array.map (fun p -> p.ParameterType |> FunDef.GetType)
         |> List.ofArray
-    static member GetType t = getType t
+    static member GetType t = Type.ToType t
         
 
 let rec areCompatibleTypes actual expected = 
     match actual, expected with
     | a, b when a=b -> true
     | Integer, Decimal
-    | Decimal, String
-    | Integer, String
-    | Boolean, String
     | Date, DateTime
-    | Date, String
-    | DateTime, String
+    | _, String
         -> true
     | _ -> false
 
@@ -139,7 +140,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                 | Less, MethodInfo "op_LessThan" mi 
                 | LessOrEqual, MethodInfo "op_LessThanOrEqual" mi 
                 | GreaterOrEqual, MethodInfo "op_GreaterThanOrEqual" mi 
-                    -> TFunctionCall (mi, getType mi.ReturnType, [lhs; rhs]) |> OK
+                    -> TFunctionCall (mi, Type.ToType mi.ReturnType, [lhs; rhs]) |> OK
                 | op, type' -> sprintf "Unsupported operator %A for type %A" op type' |> Error
 
             match toTypedSyntaxTree' lhs, toTypedSyntaxTree' rhs with
@@ -179,7 +180,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                         types
                         |> List.zip def.Parameters
                         |> List.map (function AreTypesCompatible expr -> OK expr 
-                                              | NotCompatibleTypes (a,b) -> sprintf "Types %A, %A are compatible" a b |> Error)
+                                              | NotCompatibleTypes (a,b) -> sprintf "Types %A, %A are not compatible" a b |> Error)
                         |> List.partition (function OK _ -> true | _ -> false)
 
                     if errors.Length > 0 then

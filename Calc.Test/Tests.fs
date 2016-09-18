@@ -238,10 +238,10 @@ module Tests =
 
     type Generators =
         static member Version() =
-            
+            let funcs = defaultFuncs |> Seq.filter(fun x->x.Key <> "NOW")
             let availableReferences = Gen.oneof [ Gen.map Reference (refs |> Seq.map (fun kvp -> gen { return kvp.Key }) |> Gen.oneof) ]
-            let availableFuncs = defaultFuncs |> Seq.map(fun kvp ->  kvp.Key, kvp.Value.Parameters.Length) |> Map.ofSeq
-            let aFuncs = defaultFuncs |> Seq.map (fun kvp -> gen { return kvp.Key }) |> Gen.oneof
+            let availableFuncs = funcs |> Seq.map(fun kvp ->  kvp.Key, kvp.Value.Parameters.Length) |> Map.ofSeq
+            let aFuncs = funcs |> Seq.map (fun kvp -> gen { return kvp.Key }) |> Gen.oneof
 
             let generator () =
                 let genSingle () =

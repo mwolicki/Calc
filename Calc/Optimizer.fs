@@ -42,6 +42,7 @@ let optimizer (expr: TypedExpr) : TypedExpr =
         | TConstDate _
         | TConstDateTime _
         | TConstBool _ -> expr
+        | TFunctionCall (_, UserDefined _, _) -> expr
         | TFunctionCall (mi, returnType, ps) ->
             let ps = ps |> List.map optimizer'
             if ps |> Seq.forall isConst then
@@ -64,7 +65,8 @@ let optimizer (expr: TypedExpr) : TypedExpr =
             | TConstNum (number.Real x) -> number.Real -x |> TConstNum
             | TConstBool x -> not x |> TConstBool
             | _ -> TNegate(expr)
-        | TOperatorCall (op, lhs, rhs:TypedExpr, opType) ->
+        | TOperatorCall (_,_,_, UserDefined _) -> expr
+        | TOperatorCall (op, lhs, rhs, opType) ->
             let lhs = optimizer' lhs
             let rhs = optimizer' rhs
             if isConst lhs && isConst rhs then
@@ -91,6 +93,8 @@ let optimizer (expr: TypedExpr) : TypedExpr =
             | _, String ->
                 match expr with
                 | TConstStr _ as x -> x
+                | TConstDate x -> x.ToString() |> TConstStr
+                | TConstDateTime s -> s.ToString() |> TConstStr
                 | TConstBool x -> x.ToString() |> TConstStr
                 | TConstNum x ->
                     match x with

@@ -124,7 +124,7 @@ module Lib =
     let isnullorempty a = String.IsNullOrEmpty a
     
     [<Export("NOW")>]
-    let now () = System.DateTime.Now.ToString()
+    let now () = System.DateTime.Now
     
     [<Export("TODAY")>]
-    let time () = System.DateTime.Now.ToShortDateString()    
+    let time () = System.DateTime.Now |> Date
