@@ -54,7 +54,6 @@
     <Compile Include="Tests.fs" />
     <Content Include="packages.config" />
     <Content Include="App.config" />
-    <Compile Include="TestMath.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FsCheck">
