@@ -140,9 +140,6 @@ let eval (expr:TypedExpr) (accessor:IReferenceAccessor) =
             with :? System.Reflection.TargetInvocationException  as e 
                 -> raise e.InnerException
     try
-        eval' expr |> Some
+        eval' expr |> Choice1Of2
     with 
-    | :? System.FormatException
-    | :? System.OverflowException 
-    | :? System.DivideByZeroException 
-        -> None 
+    | e -> e.Message |> Choice2Of2

@@ -100,7 +100,8 @@ module Lib =
     let exp (a:decimal) = Math.Exp (float a) |> decimal
 
     [<Export("POW")>]
-    let pow (a:decimal) (b:decimal) = Math.Pow (float a, float b) |> decimal
+    let pow (a:decimal) (b:decimal) =
+        Math.Pow (float a, float b) |> decimal
 
     [<Export("IEEEREMAINDER")>]
     let ieeeremainder (a:decimal) (b:decimal) = Math.IEEERemainder (float a, float b) |> decimal

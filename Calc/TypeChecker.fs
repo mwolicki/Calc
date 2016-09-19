@@ -98,18 +98,22 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
     let rec toTypedSyntaxTree' expr : Result<TypedExpr, string> =
 
         match expr with
-        | ConstNum n -> TConstNum n |> OK
-        | ConstStr s when isNull s -> Error "string literal cannot be <null>"
-        | ConstStr s -> TConstStr s |> OK
-        | ConstBool b -> TConstBool b |> OK
-        | ConstDate d -> TConstDate d |> OK
-        | ConstDateTime b -> TConstDateTime b |> OK
-        | Reference refName  when refName <> null -> 
+        | ConstNum (n, _) -> TConstNum n |> OK
+        | ConstStr (s, _) when isNull s -> Error "string literal cannot be <null>"
+        | ConstStr (s, _) -> TConstStr s |> OK
+        | ConstBool (b, _) -> TConstBool b |> OK
+        | ConstDate (d, _) -> TConstDate d |> OK
+        | ConstDateTime (b, _) -> TConstDateTime b |> OK
+        | Reference (refName, _) when refName <> null -> 
             match refs.TryFind refName with
             | Some def -> TReference (refName, def.Type) |> OK
-            | None -> "unknown reference " + refName |> Error
-        | Group e -> toTypedSyntaxTree' e
-        | Negate e -> 
+            | None -> 
+                match fs.TryFind refName with
+                | Some def when def.MethodInfo.GetParameters().Length = 0 ->
+                    TFunctionCall (def.MethodInfo, def.ReturnType, []) |> OK
+                | _ -> "unknown reference " + refName |> Error
+        | Group (e, _) -> toTypedSyntaxTree' e
+        | Negate (e, _) -> 
             let mi = typeof<decimal>.GetMethod ("op_UnaryNegation", [| typeof<decimal>; |])
             
             match toTypedSyntaxTree' e with
@@ -119,7 +123,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                 -> TFunctionCall (mi, Decimal, [expr])  |> OK
             | Error _ as e -> e
             | OK expr -> sprintf "Negation of type %A is not supported" expr.Type |> Error
-        | OperatorCall (op, lhs, rhs) ->
+        | OperatorCall (op, lhs, rhs, _) ->
             let getFunctionCall (lhs:TypedExpr) (rhs:TypedExpr) =
                 let (|MethodInfo|_|) name (t:Type)=
                     let type' = t.GetBCLType
@@ -162,7 +166,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                 | NotCompatibleTypes (a,b), _ 
                 | _, NotCompatibleTypes (a,b) 
                     -> sprintf "Types %A & %A are not compatible (in operator %A)" a b op |> Error
-        | FunctionCall (name, ps) when name <> null ->
+        | FunctionCall (name, ps, _) when name <> null ->
             match fs.TryFind name with
             | Some def when def.Parameters.Length <> ps.Length -> 
                 sprintf "Function %s is expecting to have %i arguments, but supplied %i" 

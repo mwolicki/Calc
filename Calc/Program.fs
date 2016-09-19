@@ -38,6 +38,11 @@ module Compile
     let dictToMap (dict:IReadOnlyDictionary<_,_>) =
         dict |> Seq.map(fun (KeyValue kv) -> kv) |> Map.ofSeq
 
+    let getAST code =
+        Tokenizer.tokenize code
+        |> Analyse.analyse
+        |> Result.unwrap
+    
     let getTypedExpr<'a> funcs refs code = 
         Tokenizer.tokenize code
         |> Analyse.analyse

@@ -220,12 +220,9 @@ module Tests =
         try
             (generateDynamicType<'a> fs expr :?> System.Func<IReferenceAccessor, 'a>)
             |> fun x -> x.Invoke accessor
-            |> box |> Some
+            |> box |> Choice1Of2
         with 
-            | :? System.OverflowException 
-            | :? System.DivideByZeroException 
-            | :? System.FormatException
-               -> None
+            | e -> e.Message |> Choice2Of2
 
     open Analyse
 
@@ -237,35 +234,39 @@ module Tests =
             Gen.map (Calc.Lib.Date) Arb.generate<System.DateTime> |> Arb.fromGen
 
     type Generators =
-        static member Version() =
+        
+        static member Version()=
+            let dummyToken = [Tokenizer.WhiteSpace(0u,0u)]
             let funcs = defaultFuncs |> Seq.filter(fun x->x.Key <> "NOW")
-            let availableReferences = Gen.oneof [ Gen.map Reference (refs |> Seq.map (fun kvp -> gen { return kvp.Key }) |> Gen.oneof) ]
+            let availableReferences = Gen.oneof [ Gen.map (fun x-> Reference(x, dummyToken)) (refs |> Seq.map (fun kvp -> gen { return kvp.Key }) |> Gen.oneof) ]
             let availableFuncs = funcs |> Seq.map(fun kvp ->  kvp.Key, kvp.Value.Parameters.Length) |> Map.ofSeq
             let aFuncs = funcs |> Seq.map (fun kvp -> gen { return kvp.Key }) |> Gen.oneof
 
             let generator () =
+                let dummyToken = [Tokenizer.WhiteSpace(0u,0u)]
+
                 let genSingle () =
-                    Gen.oneof [ Gen.map ConstNum Arb.generate<Tokenizer.number>
-                                Gen.map ConstBool Arb.generate<bool>
-                                Gen.map ConstStr Arb.generate<string>
-                                Gen.map ConstDate Arb.generate<Calc.Lib.Date>
-                                Gen.map ConstDateTime Arb.generate<System.DateTime>
+                    Gen.oneof [ Gen.map (fun x-> ConstNum(x, dummyToken)) Arb.generate<Tokenizer.number>
+                                Gen.map (fun x-> ConstBool(x, dummyToken)) Arb.generate<bool>
+                                Gen.map (fun x-> ConstStr(x, dummyToken)) Arb.generate<string>
+                                Gen.map (fun x-> ConstDate(x, dummyToken)) Arb.generate<Calc.Lib.Date>
+                                Gen.map (fun x-> ConstDateTime(x, dummyToken)) Arb.generate<System.DateTime>
                                 availableReferences ]
 
                 let rec generator = function
                 | 0 -> genSingle()
                 | n ->
                     let generator () = generator (n/3)
-                    Gen.oneof [ Gen.map3 (fun a b c -> OperatorCall(a,b,c)) Arb.generate<Tokenizer.operator> (generator()) (generator())
+                    Gen.oneof [ Gen.map3 (fun a b c -> OperatorCall(a,b,c, dummyToken)) Arb.generate<Tokenizer.operator> (generator()) (generator())
                                 Gen.map4 (fun f a b c ->
                                             match availableFuncs.[f] with
-                                            | 0 -> FunctionCall(f, [])
-                                            | 1 -> FunctionCall(f, [a])
-                                            | 2 -> FunctionCall(f, [a; b])
-                                            | _ -> FunctionCall(f, [a; b; c])) aFuncs (generator()) (generator()) (generator())
+                                            | 0 -> FunctionCall(f, [], dummyToken)
+                                            | 1 -> FunctionCall(f, [a], dummyToken)
+                                            | 2 -> FunctionCall(f, [a; b], dummyToken)
+                                            | _ -> FunctionCall(f, [a; b; c], dummyToken)) aFuncs (generator()) (generator()) (generator())
                                 genSingle()
-                                Gen.map Negate (generator())
-                                Gen.map Group (generator()) ]
+                                Gen.map (fun x-> Negate(x , dummyToken)) (generator())
+                                Gen.map (fun x-> Group(x, dummyToken)) (generator()) ]
                 Gen.sized generator
             Arb.fromGen (generator())
 
