@@ -12,12 +12,8 @@ module Helpers =
             let start = textBox.Document.ContentStart
             start.GetPositionAtOffset (int startPos + 2, LogicalDirection.Forward), start.GetPositionAtOffset (int endPos + 3, LogicalDirection.Forward)
         let rec apply' = function
-            | ConstStr (_, [t])
-            | ConstNum (_, [t])
-            | ConstBool (_, [t])
-            | ConstDateTime (_, [t])
-            | ConstDate (_, [t]) -> 
-                let (startPtr, endPtr) =getStartAndEnd t
+            | Const (_, [t]) -> 
+                let (startPtr, endPtr) = getStartAndEnd t
                 let textRange = TextRange(startPtr, endPtr)
                 textRange.ApplyPropertyValue(TextElement.BackgroundProperty, SolidColorBrush(Colors.Red))
 

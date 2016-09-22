@@ -338,19 +338,17 @@ type Rational =
     static member (*) (a:Rational, b:Rational) = Rational (a.a * b.a, a.b * b.b)
     static member (/) (a:Rational, b:Rational) = Rational (a.a * b.b, a.b * b.a)
 
-    static member private normalize a b =
+    static member private Normalize a b =
         let d = Lib.gcd a b
         let b = b/d
         if b < 0 then -a/d, -b
         else a/d, b
         
     new (a',b') =
-        let a', b' = Rational.normalize a' b'
+        let a', b' = Rational.Normalize a' b'
         { a = a'; b = b' }
         
-    new (a':Rational,b':Rational) =
-        let a', b' = Rational.normalize (a'.a * b'.a) (a'.b * b'.b)
-        { a = a'; b = b' }
+    new (a':int) = { a = a'; b = 1 }
         
     override rat.ToString() =
         if rat.b = 1 then sprintf "%i" rat.a

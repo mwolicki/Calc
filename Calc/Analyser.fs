@@ -6,12 +6,15 @@ open Calc.Lib
 type FunctionName = string
 type RefName = string
 
+type Const =
+    | Str of string
+    | Num of number
+    | Bool of bool
+    | Date of Date
+    | DateTime of System.DateTime
+
 type Expr = 
-| ConstStr of string * Token list
-| ConstNum of number * Token list
-| ConstBool of bool * Token list
-| ConstDate of Date * Token list
-| ConstDateTime of System.DateTime * Token list
+| Const of Const * Token list
 | FunctionCall of name:FunctionName * Expr list * Token list
 | Negate of Expr * Token list
 | OperatorCall of operator * left:Expr * right:Expr * Token list
@@ -40,11 +43,7 @@ let operatorPrecedence =
 
 let rec applyOperatorPrecedence expr = 
     match expr with
-    | ConstBool _
-    | ConstNum _
-    | ConstStr _
-    | ConstDate _
-    | ConstDateTime _
+    | Const _
     | Reference _
     | Negate _
         -> expr
@@ -100,11 +99,11 @@ and (|IsGroup|_|) = function
         (Group (expr, [openToken; closeToken]), ts) |> Some
      | _ -> None
 and (|IsLiteral|_|) = function
-    | (NumberLiteral (n, _,_) as t) :: ts -> Some (ConstNum (n, [t]), ts) 
-    | (BoolLiteral (b, _,_) as t) :: ts -> Some (ConstBool (b, [t]), ts)
-    | (Text (s, _, _) as t) :: ts -> Some (ConstStr (s, [t]), ts)
-    | (DateLiteral (s, _, _) as t) :: ts -> Some (ConstDate(s , [t]), ts)
-    | (DateTimeLiteral (s, _, _) as t) :: ts -> Some (ConstDateTime (s, [t]), ts)
+    | (NumberLiteral (n, _,_) as t) :: ts -> Some (Const (Num n, [t]), ts) 
+    | (BoolLiteral (b, _,_) as t) :: ts -> Some (Const (Bool b, [t]), ts)
+    | (Text (s, _, _) as t) :: ts -> Some (Const (Str s, [t]), ts)
+    | (DateLiteral (s, _, _) as t) :: ts -> Some (Const(Date s , [t]), ts)
+    | (DateTimeLiteral (s, _, _) as t) :: ts -> Some (Const (DateTime s, [t]), ts)
     | _ -> None
 and (|Analyse|_|) (t:Token list)= 
     match analyse' [] t with

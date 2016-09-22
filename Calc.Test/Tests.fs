@@ -246,11 +246,7 @@ module Tests =
                 let dummyToken = [Tokenizer.WhiteSpace(0u,0u)]
 
                 let genSingle () =
-                    Gen.oneof [ Gen.map (fun x-> ConstNum(x, dummyToken)) Arb.generate<Tokenizer.number>
-                                Gen.map (fun x-> ConstBool(x, dummyToken)) Arb.generate<bool>
-                                Gen.map (fun x-> ConstStr(x, dummyToken)) Arb.generate<string>
-                                Gen.map (fun x-> ConstDate(x, dummyToken)) Arb.generate<Calc.Lib.Date>
-                                Gen.map (fun x-> ConstDateTime(x, dummyToken)) Arb.generate<System.DateTime>
+                    Gen.oneof [ Gen.map (fun x-> Const(x, dummyToken)) Arb.generate<Const>
                                 availableReferences ]
 
                 let rec generator = function
@@ -278,9 +274,9 @@ module Tests =
             | String -> callMethod<string>  fs expr
             | Decimal -> callMethod<decimal>  fs expr
             | Boolean -> callMethod<bool>  fs expr
-            | Date -> callMethod<Date>  fs expr
-            | DateTime -> callMethod<System.DateTime>  fs expr
-
+            | Type.Date -> callMethod<Date>  fs expr
+            | Type.DateTime -> callMethod<System.DateTime>  fs expr
+            | UserDefined _ -> failwith "Userdefined types are not supported in tests"
         let test (tokens : Analyse.Expr) =
             match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree defaultFuncs refs with
             | Core.OK x -> callMethod defaultFuncs x |> ignore
@@ -306,8 +302,10 @@ module Tests =
             | String -> compareWithOracle<string>
             | Decimal -> compareWithOracle<decimal>
             | Boolean -> compareWithOracle<bool>
-            | Date -> compareWithOracle<Date>
-            | DateTime -> compareWithOracle<System.DateTime>
+            | Type.Date -> compareWithOracle<Date>
+            | Type.DateTime -> compareWithOracle<System.DateTime>
+            | UserDefined _ -> failwith "Userdefined types are not supported in tests"
+
 
 
             |> fun f -> f fs expr

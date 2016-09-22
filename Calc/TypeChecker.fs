@@ -94,16 +94,23 @@ let (|AreTypesCompatible|NotCompatibleTypes|) (expected, expr:TypedExpr) =
          AreTypesCompatible(TConvertType (actual, expected, expr))
     else NotCompatibleTypes (actual, expected)
 
+let (|IsConst|_|) = function
+| Const (x, _) ->
+    match x with
+    | Num n -> TConstNum n |> OK
+    | Str s when isNull s -> Error "string literal cannot be <null>"
+    | Str s -> TConstStr s |> OK
+    | Bool b -> TConstBool b |> OK
+    | Const.Date d -> TConstDate d |> OK
+    | Const.DateTime b -> TConstDateTime b |> OK
+    |> Some
+| _ -> None
+
 let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr : Result<TypedExpr, string> =
     let rec toTypedSyntaxTree' expr : Result<TypedExpr, string> =
 
         match expr with
-        | ConstNum (n, _) -> TConstNum n |> OK
-        | ConstStr (s, _) when isNull s -> Error "string literal cannot be <null>"
-        | ConstStr (s, _) -> TConstStr s |> OK
-        | ConstBool (b, _) -> TConstBool b |> OK
-        | ConstDate (d, _) -> TConstDate d |> OK
-        | ConstDateTime (b, _) -> TConstDateTime b |> OK
+        | IsConst c -> c
         | Reference (refName, _) when refName <> null -> 
             match refs.TryFind refName with
             | Some def -> TReference (refName, def.Type) |> OK
