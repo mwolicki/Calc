@@ -174,6 +174,6 @@ module Tests =
 
         let test (tokens : Analyse.Expr) =
             match tokens |> Core.OK |> TypeChecker.toTypedSyntaxTree (Program.funs()) (Program.refs()) with
-            | Core.OK x -> (generateMethod x).DynamicInvoke(Program.accessor()) |> ignore
+            | Core.OK x -> generateMethod x |> ignore
             | _ -> ()
         Check.QuickThrowOnFailure test
