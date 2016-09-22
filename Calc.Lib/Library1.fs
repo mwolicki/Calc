@@ -33,6 +33,11 @@ type IReferenceAccessor =
 module Lib = 
     open System
 
+    [<Export("GCD")>]
+    let rec gcd a b = 
+        if b = 0 then a
+        else gcd b (a % b)
+
     [<Export("IF")>]
     let ifFunc x (a:string) b = if x then a else b
 
@@ -320,29 +325,34 @@ module Financial =
     let yearfrac (startdate, enddate, basis) = Financial.YearFrac (startdate, enddate, enum<DayCountBasis> basis) |> decimal
 
 
-//
-//    open System
-//    let toDefinitions (mi:System.Reflection.MethodInfo) =
-//        let paramsA = 
-//            mi.GetParameters() 
-//            |> Array.map (fun x->
-//                if x.ParameterType = typeof<float> then
-//                    sprintf "%s:decimal" <| x.Name.ToLower()
-//                else x.Name.ToLower()) |> String.concat ", " 
-//        let paramsB = 
-//            mi.GetParameters() 
-//            |> Array.map (fun x->
-//                if x.ParameterType = typeof<float> then
-//                    sprintf "float %s" <| x.Name.ToLower()
-//                elif x.ParameterType.IsEnum then
-//                    sprintf "enum<%s> %s" (x.ParameterType.Name) (x.Name.ToLower())
-//                else x.Name.ToLower()) |> String.concat ", " 
-//
-//        let returnCast = if mi.ReturnType = typeof<float> then " |> decimal" else ""
-//        sprintf """[<Export("%s")>]
-//let %s (%s) = Financial.%s (%s)%s""" (mi.Name.ToUpper()) (mi.Name.ToLower()) paramsA (mi.Name) paramsB returnCast
-//
-//    typeof<Excel.FinancialFunctions.Financial>.GetMethods()
-//    |> Array.filter(fun  x->x.IsStatic)
-//    |> Array.map toDefinitions
-//    |> String.concat "\r\n\r\n"
+[<Struct>]
+type Rational =
+
+    val private a : int
+    val private b : int
+    
+    member rat.GetValue() = decimal rat.a/ decimal rat.b
+    
+    static member (+) (a:Rational, b:Rational) = Rational (a.a * b.b + b.a * a.b, a.b * b.b)
+    static member (-) (a:Rational, b:Rational) = Rational (a.a * b.b - b.a * a.b, a.b * b.b)
+    static member (*) (a:Rational, b:Rational) = Rational (a.a * b.a, a.b * b.b)
+    static member (/) (a:Rational, b:Rational) = Rational (a.a * b.b, a.b * b.a)
+
+    static member private normalize a b =
+        let d = Lib.gcd a b
+        let b = b/d
+        if b < 0 then -a/d, -b
+        else a/d, b
+        
+    new (a',b') =
+        let a', b' = Rational.normalize a' b'
+        { a = a'; b = b' }
+        
+    new (a':Rational,b':Rational) =
+        let a', b' = Rational.normalize (a'.a * b'.a) (a'.b * b'.b)
+        { a = a'; b = b' }
+        
+    override rat.ToString() =
+        if rat.b = 1 then sprintf "%i" rat.a
+        elif rat.a = 0 then "0"
+        else sprintf "%i/%i" rat.a rat.b
