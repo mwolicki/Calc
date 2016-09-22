@@ -83,13 +83,14 @@ with
         |> List.ofArray
     static member GetType t = Type.ToType t
         
-
 let rec areCompatibleTypes actual expected = 
     match actual, expected with
     | a, b when a=b -> true
     | Integer, Decimal
     | Date, DateTime
     | _, String
+        -> true
+    | Integer, UserDefined x when x = typeof<Rational>
         -> true
     | _ -> false
 

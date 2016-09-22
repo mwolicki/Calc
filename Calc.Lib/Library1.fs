@@ -331,7 +331,7 @@ type Rational =
     val private a : int
     val private b : int
     
-    member rat.GetValue() = decimal rat.a/ decimal rat.b
+    member rat.GetValue() = decimal rat.a / decimal rat.b
     
     static member (+) (a:Rational, b:Rational) = Rational (a.a * b.b + b.a * a.b, a.b * b.b)
     static member (-) (a:Rational, b:Rational) = Rational (a.a * b.b - b.a * a.b, a.b * b.b)

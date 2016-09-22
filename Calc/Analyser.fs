@@ -31,7 +31,7 @@ let operatorPrecedence =
       Concat, 10
       Minus, 15
       Multiply, 20
-      Divide, 20
+      Divide, 30
       //Power, 30
       Equals, 0
       Greater, 0
