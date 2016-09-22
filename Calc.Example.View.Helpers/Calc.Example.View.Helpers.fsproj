@@ -5,14 +5,14 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>3107dc0e-af78-4f85-a406-e17208fb0fa4</ProjectGuid>
+    <ProjectGuid>1c01c6e4-e310-4c4d-a066-f6b24371ff87</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>Calc</RootNamespace>
-    <AssemblyName>Calc</AssemblyName>
+    <RootNamespace>Calc.Example.View.Helpers</RootNamespace>
+    <AssemblyName>Calc.Example.View.Helpers</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <TargetFSharpCoreVersion>4.4.0.0</TargetFSharpCoreVersion>
-    <Name>Calc</Name>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Name>Calc.Example.View.Helpers</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,9 +22,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>bin\Debug\Calc.XML</DocumentationFile>
-    <Prefer32Bit>true</Prefer32Bit>
+    <DocumentationFile>bin\Debug\Calc.Example.View.Helpers.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -33,35 +31,35 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DocumentationFile>bin\Release\Calc.XML</DocumentationFile>
-    <Prefer32Bit>true</Prefer32Bit>
+    <DocumentationFile>bin\Release\Calc.Example.View.Helpers.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core, Version=$(TargetFSharpCoreVersion), Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
       <Private>True</Private>
     </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
+    <Reference Include="System.Windows" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
     <Compile Include="AssemblyInfo.fs" />
-    <Compile Include="Result.fs" />
-    <Compile Include="Tokenizer.fs" />
-    <Compile Include="Analyser.fs" />
-    <Compile Include="TypeChecker.fs" />
-    <Compile Include="Eval.fs" />
-    <Compile Include="Optimizer.fs" />
-    <Compile Include="Emitter.fs" />
-    <Compile Include="Program.fs" />
+    <Compile Include="Library1.fs" />
+    <None Include="Script.fsx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Calc.Lib\Calc.Lib.fsproj">
       <Name>Calc.Lib</Name>
       <Project>{ed5b7fc6-9793-48e6-9f6e-2b636eb0912c}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Calc\Calc.fsproj">
+      <Name>Calc</Name>
+      <Project>{3107dc0e-af78-4f85-a406-e17208fb0fa4}</Project>
       <Private>True</Private>
     </ProjectReference>
   </ItemGroup>

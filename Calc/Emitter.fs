@@ -60,7 +60,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
         | Tokenizer.operator.Divide -> [OpCodes.Div]
         | Tokenizer.operator.Multiply -> [OpCodes.Mul]
         | Tokenizer.operator.Equals -> [OpCodes.Ceq]
-        | Tokenizer.operator.Inequals -> [OpCodes.Ceq; OpCodes.Ldc_I4_0; OpCodes.Ceq]
+        | Tokenizer.operator.Inequality -> [OpCodes.Ceq; OpCodes.Ldc_I4_0; OpCodes.Ceq]
         | Tokenizer.operator.Greater -> [OpCodes.Cgt]
         | Tokenizer.operator.GreaterOrEqual -> [OpCodes.Clt; OpCodes.Ldc_I4_0; OpCodes.Ceq]
         | Tokenizer.operator.Less -> [OpCodes.Clt]
@@ -72,7 +72,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
         let emitInt = emitInt il
         match expr with
         | TConstBool true -> emitInt 1
-        | TConstBool false -> emitInt 2
+        | TConstBool false -> emitInt 0
         | TConstNum type' ->
             match type' with
             | Tokenizer.number.Integer v -> emitInt v
@@ -83,37 +83,28 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 il.Emit (OpCodes.Newobj, ctor)
 
         | TConstStr s -> il.Emit(OpCodes.Ldstr, s)
-        | TGroup expr -> ilBuild expr
-        | TNegate expr when expr.Type = TypeChecker.Integer || expr.Type = TypeChecker.Boolean -> 
+        | TConstDateTime dt ->
+            il.Emit(OpCodes.Ldc_I8, dt.Ticks)
+            let ctor = typeof<System.DateTime>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<int64>|], null)
+            il.Emit (OpCodes.Newobj, ctor)
+        | TConstDate dt ->
+            System.DateTime(dt.Year, dt.Month, dt.Day)
+            |> TConstDateTime
+            |> ilBuild 
+            let ctor = typeof<Date>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<System.DateTime>|], null)
+            il.Emit (OpCodes.Newobj, ctor)
+
+        | TNegate expr when expr.Type = TypeChecker.Integer -> 
             ilBuild expr
             il.Emit OpCodes.Neg
-        | TNegate expr when expr.Type = TypeChecker.Decimal -> 
-            ilBuild <| TOperatorCall(Tokenizer.Multiply, TConstNum(Tokenizer.number.Real(-1M)), expr, Type.Decimal)
-        | TNegate expr when  expr.Type = TypeChecker.String ->
-            //TODO: we cannot negate string - so currently we ignore it, that should be raised as an error (but not as a crash!)
+        | TNegate expr when expr.Type = TypeChecker.Boolean -> 
             ilBuild expr
+            il.Emit OpCodes.Ldc_I4_0
+            il.Emit OpCodes.Ceq
         | IsSimpleOperation (opCodes, lhs, rhs) ->
             ilBuild lhs
             ilBuild rhs
             List.iter il.Emit opCodes
-        | TOperatorCall (opCode, lhs, rhs, t) ->
-            let mi =
-                match opCode with
-                | Tokenizer.operator.Plus -> "op_Addition"
-                | Tokenizer.operator.Minus -> "op_Subtraction"
-                | Tokenizer.operator.Divide ->"op_Division"
-                | Tokenizer.operator.Multiply -> "op_Multiply"
-                | Tokenizer.operator.Equals -> "op_Equality"
-                | Tokenizer.operator.Greater -> "op_GreaterThan"
-                | Tokenizer.operator.Less -> "op_LessThan"
-                | Tokenizer.operator.Inequals -> "op_Inequality"
-                | Tokenizer.operator.GreaterOrEqual -> "op_GreaterThanOrEqual"
-                | Tokenizer.operator.LessOrEqual -> "op_LessThanOrEqual"
-                | Tokenizer.operator.Concat -> "Concat"
-            let mi = lhs.Type.GetBCLType.GetMethod (mi, [|lhs.Type.GetBCLType; rhs.Type.GetBCLType|])
-            ilBuild lhs
-            ilBuild rhs
-            il.EmitCall(OpCodes.Call, mi, null)
 
         | TReference (name, type') -> 
             let methodInfo = 
@@ -122,14 +113,16 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 | Integer -> "GetInt"
                 | Decimal -> "GetDecimal"
                 | Boolean -> "GetBoolean"
-                | x -> failwithf "Not supported yet type (%A) of reference" x
+                | Date -> "GeDate"
+                | DateTime -> "GeDateTime"
+                | _ -> failwith "Cannot reference UserDefined types"
                 |> typeof<IReferenceAccessor>.GetMethod
             il.Emit OpCodes.Ldarg_0
             il.Emit(OpCodes.Ldstr, name)
             il.EmitCall(OpCodes.Callvirt, methodInfo, null)
-        | TFunctionCall (name, _, params') -> 
+        | TFunctionCall (mi, _, params') -> 
             params' |> List.iter ilBuild
-            il.EmitCall(OpCodes.Call, fs.[name].MethodInfo, null)
+            il.EmitCall(OpCodes.Call, mi, null)
         | TConvertType (currentType, newType, expr) ->
             ilBuild expr
             match currentType, newType with
@@ -142,9 +135,11 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
             | Integer, Decimal ->
                 let ctor = typeof<System.Decimal>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<int>|], null)
                 il.Emit (OpCodes.Newobj, ctor)
+            | Date, DateTime ->
+                failwith "TODO: add support for conversion between Date & DateTime"
             | _ -> failwithf "Conversion between %A & %A is not supported" currentType newType
 
-        | TOperatorCall _
+        | _
             -> failwithf "Unsupported expression %A" expr
     ilBuild expr
     il.Emit OpCodes.Ret
@@ -153,7 +148,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
 let generateDynamicType<'a> (fs:Map<FunName, FunDef>) (expr:TypedExpr) =
     let assemblyNumber = Numbers.getAssemblyNumber()
     let assemblyName = sprintf "emit-calc-%i.dll" assemblyNumber
-    let builder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName assemblyName, AssemblyBuilderAccess.RunAndSave)
+    let builder = AssemblyBuilder.DefineDynamicAssembly(AssemblyName assemblyName, AssemblyBuilderAccess.RunAndCollect)
     
     let m = builder.DefineDynamicModule (assemblyName, true)
 
@@ -170,4 +165,8 @@ let generateDynamicType<'a> (fs:Map<FunName, FunDef>) (expr:TypedExpr) =
 //    builder.Save assemblyName
 
     let mi = type'.GetMethod name
-    mi.CreateDelegate(typeof<System.Func<IReferenceAccessor, 'a>>) :?> System.Func<IReferenceAccessor, 'a>
+
+    let type' = typedefof<System.Func<int,int>>.MakeGenericType(typeof<IReferenceAccessor>, expr.Type.GetBCLType)
+
+    mi.CreateDelegate(type')
+        
