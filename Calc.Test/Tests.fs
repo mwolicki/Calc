@@ -50,6 +50,45 @@ module Tests =
     let ``'1' & '2' is "12"`` () = "'1' & '2'" == "12"
 
     [<Test>]
+    let ``1/2 is Rational(1,2)`` () = "1/2" == Rational(1,2)
+    
+    [<Test>]
+    let ``1/3+1/2 is Rational(5,6)`` () = "1/3+1/2" == Rational(5,6)
+
+    
+    [<Test>]
+    let ``1/2*(1/2)/(1/2) is Rational(1,2)`` () = "1/2*(1/2)/(1/2)" == Rational(1,2)
+
+
+    [<Test>]
+    let ``1/2*1/2 is Rational(1,4)`` () = "1/2*1/2" == Rational(1,4)
+
+    [<Test>]
+    let ``(1/2)*(1/2)+(1/2) is Rational(3,4)`` () = "(1/2)*(1/2)+(1/2)" == Rational(3,4)
+
+    [<Test>]
+    let ``1/2*1/2+1/2 is Rational(3,4)`` () = "1/2*1/2+1/2" == Rational(3,4)
+
+    [<Test>]
+    let ``1/2 + 1/2*1/2 is Rational(3,4)`` () = "1/2 + 1/2*1/2" == Rational(3,4)
+
+    [<Test>]
+    let ``1/2*1/2+2 is Rational(5,4)`` () = "1/2*1/2+2" == Rational(5,4)
+
+    [<Test>]
+    let ``1/2*1/2-2 is Rational(-3,4)`` () = "1/2*1/2-2" == Rational(-3,4)
+
+    [<Test>]
+    let ``(1/2*1/2)-2 is Rational(-3,4)`` () = "(1/2*1/2)-2" == Rational(-3,4)
+
+
+    [<Test>]
+    let ``1/2*1/2*1/2 is Rational(1,8)`` () = "1/2*1/2*1/2" == Rational(1,8)
+
+    [<Test>]
+    let ``1/2+1/2 is Rational(1,2)`` () = "1/2+1/2" == Rational(1)
+
+    [<Test>]
     let ``1>=1 is true`` () = "1>=1" == true
 
     [<Test>]
