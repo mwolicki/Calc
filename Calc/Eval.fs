@@ -92,12 +92,14 @@ let negate = function
 
 let eval (expr:TypedExpr) (accessor:IReferenceAccessor) =
     let rec eval' = function
-        | TConstNum (number.Integer i) -> box i
-        | TConstNum (number.Real i) -> box i
-        | TConstStr str -> box str
-        | TConstBool b -> box b
-        | TConstDate b -> box b
-        | TConstDateTime b -> box b
+        | TConst c ->
+            match c with 
+            | TInteger i -> box i
+            | TDecimal i -> box i
+            | TStr str -> box str
+            | TBool b -> box b
+            | TDate b -> box b
+            | TDateTime b -> box b
         | TOperatorCall (op, lhs, rhs, _) ->
             let lhs = eval' lhs
             let rhs = eval' rhs
@@ -115,6 +117,9 @@ let eval (expr:TypedExpr) (accessor:IReferenceAccessor) =
             | LessOrEqual -> lte
             |> fun f->f(lhs, rhs)
         | TNegate e -> eval' e |> negate
+        | TCallCtor (ctor, es) ->
+            let es = es |> List.map eval' |> Array.ofList
+            ctor.Invoke es
         | TReference(name, t) ->
             match t with
             | String -> accessor.GetString name |> box

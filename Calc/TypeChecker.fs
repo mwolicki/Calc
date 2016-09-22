@@ -13,6 +13,7 @@ type Type =
 | Date
 | DateTime
 | UserDefined of System.Type
+
 with member t.GetBCLType =
         match t with
         | String -> typeof<string>
@@ -29,16 +30,27 @@ with member t.GetBCLType =
         elif typeof<System.Int32> = t then Integer
         elif typeof<System.DateTime> = t then DateTime
         elif typeof<Date> = t then Date
-        else
-            UserDefined t
-        
+        else UserDefined t
+type TConst =
+| TStr of string
+| TInteger of int
+| TDecimal of decimal
+| TBool of bool
+| TDate of Date
+| TDateTime of System.DateTime
+with
+    member c.Type = 
+        match c with
+        | TStr _ -> String
+        | TInteger _ -> Integer
+        | TDecimal _ -> Decimal
+        | TBool _ -> Boolean
+        | TDate _ -> Date
+        | TDateTime _ -> DateTime
 
 type TypedExpr = 
-| TConstStr of string
-| TConstNum of number
-| TConstBool of bool
-| TConstDate of Date
-| TConstDateTime of System.DateTime
+| TConst of TConst
+| TCallCtor of ctorInfo:ConstructorInfo * TypedExpr list
 | TFunctionCall of methodInfo:MethodInfo * returnType:Type * TypedExpr list
 | TNegate of TypedExpr
 | TOperatorCall of operator * lhs:TypedExpr * rhs:TypedExpr * opType : Type
@@ -47,21 +59,15 @@ type TypedExpr =
 with 
     member expr.Type = 
         match expr with
-        | TConstDate _ -> Date
-        | TConstDateTime _ -> DateTime
-        | TConstBool _ -> Boolean
-        | TConstStr _ -> String
-        | TConstNum (number.Integer _) -> Integer
-        | TConstNum (number.Real _) -> Decimal
+        | TConst x -> x.Type
         | TOperatorCall (opType = t)
         | TConvertType (newType = t) 
         | TReference (refType = t)
         | TFunctionCall (returnType = t) -> t
+        | TCallCtor (ctorInfo, _) -> UserDefined ctorInfo.DeclaringType
         | TNegate expr
             -> expr.Type 
 type FunName = string
-
-
 
 type RefDef =
     { Name : RefName
@@ -97,20 +103,75 @@ let (|AreTypesCompatible|NotCompatibleTypes|) (expected, expr:TypedExpr) =
 let (|IsConst|_|) = function
 | Const (x, _) ->
     match x with
-    | Num n -> TConstNum n |> OK
+    | Num n -> 
+        match n with
+        | Real n -> TConst.TDecimal n
+        | number.Integer n -> TConst.TInteger n
+        |> OK
     | Str s when isNull s -> Error "string literal cannot be <null>"
-    | Str s -> TConstStr s |> OK
-    | Bool b -> TConstBool b |> OK
-    | Const.Date d -> TConstDate d |> OK
-    | Const.DateTime b -> TConstDateTime b |> OK
+    | Str s -> TStr s |> OK
+    | Bool b -> TBool b |> OK
+    | Const.Date d -> TDate d |> OK
+    | Const.DateTime b -> TDateTime b |> OK
+    |> Result.map TypedExpr.TConst
     |> Some
 | _ -> None
 
-let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr : Result<TypedExpr, string> =
-    let rec toTypedSyntaxTree' expr : Result<TypedExpr, string> =
+let getFunctionCall op (lhs:TypedExpr) (rhs:TypedExpr) =
+    let (|MethodInfo|_|) name (t:Type)=
+        let type' = t.GetBCLType
+        let mi = type'.GetMethod (name, [| type'; type' |])
+        if isNull mi then None
+        else Some mi
+    match op, lhs.Type with
+    | Plus, MethodInfo "op_Addition" mi 
+    | Plus, MethodInfo "Concat" mi 
+    | Minus, MethodInfo "op_Subtraction" mi 
+    | Divide, MethodInfo "op_Division" mi 
+    | Multiply, MethodInfo "op_Multiply" mi 
+    | Concat, MethodInfo "op_Addition" mi 
+    | Concat, MethodInfo "Concat" mi 
+    | Equals, MethodInfo "op_Equality" mi 
+    | Inequality, MethodInfo "op_Inequality" mi 
+    | Greater, MethodInfo "op_GreaterThan" mi 
+    | Less, MethodInfo "op_LessThan" mi 
+    | LessOrEqual, MethodInfo "op_LessThanOrEqual" mi 
+    | GreaterOrEqual, MethodInfo "op_GreaterThanOrEqual" mi 
+        -> TFunctionCall (mi, Type.ToType mi.ReturnType, [lhs; rhs]) |> OK
+    | op, type' -> sprintf "Unsupported operator %A for type %A" op type' |> Error
 
+
+let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr : Result<TypedExpr, string> =
+    let rec (|IsOperatorCall|_|) = function
+        | OperatorCall (op, lhs, rhs, _) ->
+            match toTypedSyntaxTree' lhs, toTypedSyntaxTree' rhs with
+            | Error txt, _
+            | _, Error txt
+                -> Error txt
+            | OK lhs, OK rhs ->
+                match (lhs.Type, rhs), (rhs.Type, lhs) with
+                | (Integer, rhs), (Integer, lhs)
+                | (Boolean, rhs), (Boolean, lhs) ->
+                    match op with
+                    | Plus | Minus | Multiply | Concat when lhs.Type = Integer ->
+                        TOperatorCall (op, lhs, rhs, lhs.Type) |> OK
+                    | Divide when lhs.Type = Integer ->
+                        let ctor = typeof<Rational>.GetConstructor([|typeof<int>; typeof<int>|])
+                        TCallCtor(ctor, [ lhs; rhs]) |> OK
+                    | Equals | Greater | Less | Inequality | LessOrEqual | GreaterOrEqual -> 
+                        TOperatorCall (op, lhs, rhs, Boolean) |> OK
+                    | _ -> sprintf "Operator %A is not supported for type %A" op lhs.Type |> Error
+                | AreTypesCompatible rhs, _ -> getFunctionCall op lhs rhs
+                | _, AreTypesCompatible lhs -> getFunctionCall op lhs rhs
+                | NotCompatibleTypes (a,b), _ 
+                | _, NotCompatibleTypes (a,b) 
+                    -> sprintf "Types %A & %A are not compatible (in operator %A)" a b op |> Error
+            |> Some
+        | _ -> None
+    and toTypedSyntaxTree' expr : Result<TypedExpr, string> =
         match expr with
-        | IsConst c -> c
+        | IsOperatorCall e
+        | IsConst e -> e
         | Reference (refName, _) when refName <> null -> 
             match refs.TryFind refName with
             | Some def -> TReference (refName, def.Type) |> OK
@@ -130,49 +191,6 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                 -> TFunctionCall (mi, Decimal, [expr])  |> OK
             | Error _ as e -> e
             | OK expr -> sprintf "Negation of type %A is not supported" expr.Type |> Error
-        | OperatorCall (op, lhs, rhs, _) ->
-            let getFunctionCall (lhs:TypedExpr) (rhs:TypedExpr) =
-                let (|MethodInfo|_|) name (t:Type)=
-                    let type' = t.GetBCLType
-                    let mi = type'.GetMethod (name, [| type'; type' |])
-                    if isNull mi then None
-                    else Some mi
-                match op, lhs.Type with
-                | Plus, MethodInfo "op_Addition" mi 
-                | Plus, MethodInfo "Concat" mi 
-                | Minus, MethodInfo "op_Subtraction" mi 
-                | Divide, MethodInfo "op_Division" mi 
-                | Multiply, MethodInfo "op_Multiply" mi 
-                | Concat, MethodInfo "op_Addition" mi 
-                | Concat, MethodInfo "Concat" mi 
-                | Equals, MethodInfo "op_Equality" mi 
-                | Inequality, MethodInfo "op_Inequality" mi 
-                | Greater, MethodInfo "op_GreaterThan" mi 
-                | Less, MethodInfo "op_LessThan" mi 
-                | LessOrEqual, MethodInfo "op_LessThanOrEqual" mi 
-                | GreaterOrEqual, MethodInfo "op_GreaterThanOrEqual" mi 
-                    -> TFunctionCall (mi, Type.ToType mi.ReturnType, [lhs; rhs]) |> OK
-                | op, type' -> sprintf "Unsupported operator %A for type %A" op type' |> Error
-
-            match toTypedSyntaxTree' lhs, toTypedSyntaxTree' rhs with
-            | Error txt, _
-            | _, Error txt
-                -> Error txt
-            | OK lhs, OK rhs ->
-                match (lhs.Type, rhs), (rhs.Type, lhs) with
-                | (Integer, rhs), (Integer, lhs)
-                | (Boolean, rhs), (Boolean, lhs) ->
-                    match op with
-                    | Plus | Minus | Divide | Multiply | Concat when lhs.Type = Integer ->
-                        TOperatorCall (op, lhs, rhs, lhs.Type) |> OK
-                    | Equals | Greater | Less | Inequality | LessOrEqual | GreaterOrEqual -> 
-                        TOperatorCall (op, lhs, rhs, Boolean) |> OK
-                    | _ -> sprintf "Operator %A is not supported for type %A" op lhs.Type |> Error
-                | AreTypesCompatible rhs, _ -> getFunctionCall lhs rhs
-                | _, AreTypesCompatible lhs -> getFunctionCall lhs rhs
-                | NotCompatibleTypes (a,b), _ 
-                | _, NotCompatibleTypes (a,b) 
-                    -> sprintf "Types %A & %A are not compatible (in operator %A)" a b op |> Error
         | FunctionCall (name, ps, _) when name <> null ->
             match fs.TryFind name with
             | Some def when def.Parameters.Length <> ps.Length -> 

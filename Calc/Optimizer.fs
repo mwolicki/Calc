@@ -7,29 +7,30 @@ open Eval
 
 [<AutoOpen>]
 module private Optimizer = 
-    let toConst (v:obj) = function
-    | String -> TConstStr (v :?> string)
-    | Decimal ->  (v :?> decimal) |> number.Real |> TConstNum
-    | Type.Integer ->  (v :?> int) |> number.Integer |> TConstNum
-    | Boolean -> TConstBool (v :?> bool)
-    | DateTime -> TConstDateTime (v :?> System.DateTime)
-    | Date -> TConstDate (v :?> Calc.Lib.Date)
+    let toConst (v:obj) e =
+        match e with
+        | String -> TStr (v :?> string)
+        | Decimal ->  (v :?> decimal)|> TDecimal
+        | Type.Integer ->  (v :?> int) |> TInteger
+        | Boolean -> TBool (v :?> bool)
+        | DateTime -> TDateTime (v :?> System.DateTime)
+        | Date -> TDate (v :?> Calc.Lib.Date)
+        |> TConst
 
     let isConst = function
-    | TConstStr _
-    | TConstNum _
-    | TConstDate _
-    | TConstDateTime _
-    | TConstBool _ -> true
+    | TConst _ -> true
     | _ -> false
 
     let getValue = function
-    | TConstStr s -> box s
-    | TConstNum (number.Integer i) -> box i
-    | TConstNum (number.Real r) -> box r
-    | TConstBool b -> box b
-    | TConstDate b -> box b
-    | TConstDateTime b -> box b
+    | TConst c ->
+        match c with
+        | TStr s -> box s
+        | TInteger i -> box i
+        | TDecimal r -> box r
+        | TBool b -> box b
+        | TDate b -> box b
+        | TDateTime b -> box b
+        | _ -> failwith "Cannot get value! Something went wrong here..."
     | _ -> failwith "Cannot get value! Something went wrong here..."
 
 let optimizer (expr: TypedExpr) : TypedExpr =
@@ -37,11 +38,7 @@ let optimizer (expr: TypedExpr) : TypedExpr =
     let rec optimizer' expr = 
         match expr with
         | TReference (_)
-        | TConstStr _
-        | TConstNum _
-        | TConstDate _
-        | TConstDateTime _
-        | TConstBool _ -> expr
+        | TConst _ -> expr
         | TFunctionCall (_, UserDefined _, _) -> expr
         | TFunctionCall (mi, returnType, ps) ->
             let ps = ps |> List.map optimizer'
@@ -61,10 +58,10 @@ let optimizer (expr: TypedExpr) : TypedExpr =
                 TFunctionCall(mi, returnType, ps)
         | TNegate expr ->
             match optimizer' expr with
-            | TConstNum (number.Integer x) -> number.Integer -x |> TConstNum 
-            | TConstNum (number.Real x) -> number.Real -x |> TConstNum
-            | TConstBool x -> not x |> TConstBool
-            | _ -> TNegate(expr)
+            | TConst (TInteger x) -> TInteger -x |> TConst 
+            | TConst (TDecimal x) -> TDecimal -x |> TConst
+            | TConst (TBool x) -> not x |> (TBool >> TConst)
+            | _ -> TNegate(expr) 
         | TOperatorCall (_,_,_, UserDefined _) -> expr
         | TOperatorCall (op, lhs, rhs, opType) ->
             let lhs = optimizer' lhs
@@ -92,23 +89,25 @@ let optimizer (expr: TypedExpr) : TypedExpr =
             match currentType, newType with
             | _, String ->
                 match expr with
-                | TConstStr _ as x -> x
-                | TConstDate x -> x.ToString() |> TConstStr
-                | TConstDateTime s -> s.ToString() |> TConstStr
-                | TConstBool x -> x.ToString() |> TConstStr
-                | TConstNum x ->
-                    match x with
-                    | number.Integer x -> x.ToString() |> TConstStr
-                    | number.Real x -> x.ToString() |> TConstStr
+                | TConst c ->
+                    match c with
+                    | TStr x -> x
+                    | TDate x -> x.ToString()
+                    | TDateTime s -> s.ToString()
+                    | TBool x -> x.ToString()
+                    | TInteger x -> x.ToString()
+                    | TDecimal x -> x.ToString()
+                    |> (TStr>>TConst)
                 | _ -> TConvertType (currentType, newType, expr)
             | Type.Integer, Decimal ->
                 match expr with
-                | TConstNum (number.Integer x) -> decimal x |> (number.Real >> TConstNum)
+                | TConst (TInteger x) -> decimal x |> (TDecimal >> TConst)
                 | _ -> TConvertType (currentType, newType, expr)
             | Type.Date, DateTime ->
                 match expr with
-                | TConstDate d -> System.DateTime(d.Year, d.Month, d.Day) |> TConstDateTime
+                | TConst (TDate d) -> System.DateTime(d.Year, d.Month, d.Day) |> (TDateTime>>TConst)
                 | _ -> TConvertType (currentType, newType, expr)
             | _ -> TConvertType (currentType, newType, expr)
+        | default' -> default'
 
     optimizer' expr

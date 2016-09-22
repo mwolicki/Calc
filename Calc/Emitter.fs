@@ -71,29 +71,30 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
     let rec ilBuild (expr:TypedExpr) = 
         let emitInt = emitInt il
         match expr with
-        | TConstBool true -> emitInt 1
-        | TConstBool false -> emitInt 0
-        | TConstNum type' ->
-            match type' with
-            | Tokenizer.number.Integer v -> emitInt v
-            | Tokenizer.number.Real v -> 
+        | TConst c ->
+            match c with
+            | TConst.TBool true -> emitInt 1
+            | TConst.TBool false -> emitInt 0
+            | TConst.TInteger v -> emitInt v
+            | TConst.TDecimal v -> 
                 Numbers.getDecimalBits v
                 |> Seq.iter emitInt
                 let ctor = typeof<System.Decimal>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<int>;typeof<int>;typeof<int>;typeof<bool>;typeof<byte>|], null)
                 il.Emit (OpCodes.Newobj, ctor)
-
-        | TConstStr s -> il.Emit(OpCodes.Ldstr, s)
-        | TConstDateTime dt ->
-            il.Emit(OpCodes.Ldc_I8, dt.Ticks)
-            let ctor = typeof<System.DateTime>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<int64>|], null)
+            | TConst.TStr s -> il.Emit(OpCodes.Ldstr, s)
+            | TConst.TDateTime dt ->
+                il.Emit(OpCodes.Ldc_I8, dt.Ticks)
+                let ctor = typeof<System.DateTime>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<int64>|], null)
+                il.Emit (OpCodes.Newobj, ctor)
+            | TConst.TDate dt ->
+                System.DateTime(dt.Year, dt.Month, dt.Day)
+                |> (TConst.TDateTime>>TConst)
+                |> ilBuild
+                let ctor = typeof<Date>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<System.DateTime>|], null)
+                il.Emit (OpCodes.Newobj, ctor)
+        | TCallCtor (ctor, exprs) ->
+            exprs |> List.iter ilBuild
             il.Emit (OpCodes.Newobj, ctor)
-        | TConstDate dt ->
-            System.DateTime(dt.Year, dt.Month, dt.Day)
-            |> TConstDateTime
-            |> ilBuild 
-            let ctor = typeof<Date>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<System.DateTime>|], null)
-            il.Emit (OpCodes.Newobj, ctor)
-
         | TNegate expr when expr.Type = TypeChecker.Integer -> 
             ilBuild expr
             il.Emit OpCodes.Neg
