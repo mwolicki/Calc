@@ -65,23 +65,53 @@ module Tests =
 
     [<Test>]
     let ``(1/2)*(1/2)+(1/2) is Rational(3,4)`` () = "(1/2)*(1/2)+(1/2)" == Rational(3,4)
-
+    
     [<Test>]
     let ``1/2*1/2+1/2 is Rational(3,4)`` () = "1/2*1/2+1/2" == Rational(3,4)
 
     [<Test>]
+    let ``1/4+1/2 is Rational(3,4)`` () = "1/4+1/2" == Rational(3,4)
+
+    [<Test>]
+    let ``(1/4)+1/2 is Rational(3,4)`` () = "(1/4)+1/2" == Rational(3,4)
+
+    [<Test>]
     let ``1/2 + 1/2*1/2 is Rational(3,4)`` () = "1/2 + 1/2*1/2" == Rational(3,4)
+    
+    [<Test>]
+    let ``1/2*1/2+2 is Rational(5,4)`` () = "1/2*1/2+2" == Rational(9,4)
 
     [<Test>]
-    let ``1/2*1/2+2 is Rational(5,4)`` () = "1/2*1/2+2" == Rational(5,4)
+    let ``(1/4)+2 is Rational(5,4)`` () = "(1/4)+2" == Rational(9,4)
+    
+    [<Test>]
+    let ``1/2*1/2-2 is Rational(-3,4)`` () = "1/2*1/2-2" == Rational(-7,4)
+    
+    [<Test>]
+    let ``1/4-2 is Rational(-7,4)`` () = "1/4-2" == Rational(-7,4)
 
     [<Test>]
-    let ``1/2*1/2-2 is Rational(-3,4)`` () = "1/2*1/2-2" == Rational(-3,4)
+    let ``2-1/4 is Rational(-7,4)`` () = "2-1/4" == Rational(-7,4)
 
     [<Test>]
-    let ``(1/2*1/2)-2 is Rational(-3,4)`` () = "(1/2*1/2)-2" == Rational(-3,4)
+    let ``(1/2*1/2)-2 is Rational(-7,4)`` () = "(1/2*1/2)-2" == Rational(-7,4)
 
+    [<Test>]
+    let ``(5/2)+1 is Rational(7,2)`` () = "(5/2)+1" == Rational(7,2)
 
+    [<Test>]
+    let ``5/2+1 is Rational(7,2)`` () = "5/2+1" == Rational(7,2)
+
+    [<Test>]
+    let ``1+3/2 is Rational(5,2)`` () = "1+3/2" == Rational(5,2)
+
+    [<Test>]
+    let ``1.0+(1/2) is 1.5m`` () = "1.0+(1/2)" == 1.5m
+    [<Test>]
+    let ``ABS(-1/2) is 0.5m`` () = "ABS(-1/2)" == 0.5m
+
+    [<Test>]
+    let ``2+3/2 is Rational(7,2)`` () = "2+3/2" == Rational(7,2)
     [<Test>]
     let ``1/2*1/2*1/2 is Rational(1,8)`` () = "1/2*1/2*1/2" == Rational(1,8)
 

@@ -20,7 +20,39 @@ type Expr =
 | OperatorCall of operator * left:Expr * right:Expr * Token list
 | Reference of name:RefName * Token list
 | Group of Expr * Token list
-
+with
+    member expr.ToDisplay() = 
+        match expr with
+        | Const (c, _) -> 
+            match c with
+             | Str x -> x.ToString()
+             | Num x -> 
+                match x with
+                | number.Integer i -> i.ToString()
+                | number.Real r -> r.ToString()
+             | Bool x -> x.ToString()
+             | Date x -> x.ToString() |> sprintf "[%s]"
+             | DateTime x -> x.ToString() |> sprintf "[%s]"
+        | FunctionCall (name, es,_) ->
+            sprintf "%s(%s)" name (es |> Seq.map (fun x->x.ToDisplay()) |> String.concat ", ")
+        | Negate (x,_) -> x.ToDisplay() |> sprintf "-%s"
+        | OperatorCall (op, lhs, rhs,_) -> 
+            let op = 
+                match op with
+                 | Plus -> "+"
+                 | Minus -> "-"
+                 | Multiply -> "*"
+                 | Divide -> "/"
+                 | Equals -> "="
+                 | Inequality  -> "<>"
+                 | Greater  -> ">"
+                 | Less  -> "<"
+                 | GreaterOrEqual -> ">=" 
+                 | LessOrEqual   -> "<="
+                 | Concat -> "&"
+            sprintf "(%s %s %s)" (lhs.ToDisplay()) (op.ToString()) (rhs.ToDisplay())
+        | Reference (name, _) -> sprintf "`%s`" name
+        | Group (x, _) -> x.ToDisplay() |> sprintf "(%s)"
 
 let (|IsReference|_|) = function
     | (StringLiteral (s, _, _) as t) :: xs -> Some (Reference (s, [t]) , xs)
@@ -31,7 +63,7 @@ let operatorPrecedence =
       Concat, 10
       Minus, 15
       Multiply, 20
-      Divide, 30
+      Divide, 20
       //Power, 30
       Equals, 0
       Greater, 0

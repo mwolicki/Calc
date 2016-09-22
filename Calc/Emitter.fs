@@ -139,6 +139,12 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
             | Integer, UserDefined t when t = typeof<Rational> ->
                 let ctor = typeof<Rational>.GetConstructor (BindingFlags.Instance ||| BindingFlags.Public, null, [|typeof<int>|], null)
                 il.Emit (OpCodes.Newobj, ctor)
+            | UserDefined t, Decimal when t = typeof<Rational> ->
+                let local = il.DeclareLocal typeof<Rational>
+                il.Emit(OpCodes.Stloc, local);
+                il.Emit(OpCodes.Ldloca, local);
+                let mi = typeof<Rational>.GetMethod ("GetValue", BindingFlags.Instance ||| BindingFlags.Public, null, [||], null)
+                il.EmitCall(OpCodes.Call, mi, null)
             | Date, DateTime ->
                 failwith "TODO: add support for conversion between Date & DateTime"
             | _ -> failwithf "Conversion between %A & %A is not supported" currentType newType

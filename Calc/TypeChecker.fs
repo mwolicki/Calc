@@ -90,7 +90,8 @@ let rec areCompatibleTypes actual expected =
     | Date, DateTime
     | _, String
         -> true
-    | Integer, UserDefined x when x = typeof<Rational>
+    | Integer, UserDefined x
+    | UserDefined x, Decimal when x = typeof<Rational>
         -> true
     | _ -> false
 

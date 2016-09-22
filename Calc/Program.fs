@@ -43,7 +43,7 @@ module Compile
         |> Analyse.analyse
         |> Result.unwrap
     
-    let getTypedExpr<'a> funcs refs code = 
+    let getTypedExpr funcs refs code = 
         Tokenizer.tokenize code
         |> Analyse.analyse
         |> TypeChecker.toTypedSyntaxTree funcs refs
