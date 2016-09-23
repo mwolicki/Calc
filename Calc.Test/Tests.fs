@@ -79,7 +79,7 @@ module Tests =
     let ``1/2 + 1/2*1/2 is Rational(3,4)`` () = "1/2 + 1/2*1/2" == Rational(3,4)
     
     [<Test>]
-    let ``1/2*1/2+2 is Rational(5,4)`` () = "1/2*1/2+2" == Rational(9,4)
+    let ``1/2*1/2+2 is Rational(9,4)`` () = "1/2*1/2+2" == Rational(9,4)
 
     [<Test>]
     let ``(1/4)+2 is Rational(5,4)`` () = "(1/4)+2" == Rational(9,4)
@@ -151,6 +151,9 @@ module Tests =
     
     [<Test>] 
     let ``1 + 2 + 3 is 6`` () = "1 + 2 + 3" == 6
+
+    [<Test>] 
+    let ``1.0/2.0 * 1.0/2.0 + 2.0 is 2.25m`` () = "1.0/2.0 * 1.0/2.0 + 2.0" == 2.25m
 
     [<Test>]
     let ``1 + 2.0 + 3 is 6m`` () = "1 + 2.0 + 3" == 6m
