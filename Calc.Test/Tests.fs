@@ -85,13 +85,13 @@ module Tests =
     let ``(1/4)+2 is Rational(5,4)`` () = "(1/4)+2" == Rational(9,4)
     
     [<Test>]
-    let ``1/2*1/2-2 is Rational(-3,4)`` () = "1/2*1/2-2" == Rational(-7,4)
+    let ``1/2*1/2-2 is Rational(-7,4)`` () = "1/2*1/2-2" == Rational(-7,4)
     
     [<Test>]
     let ``1/4-2 is Rational(-7,4)`` () = "1/4-2" == Rational(-7,4)
 
     [<Test>]
-    let ``2-1/4 is Rational(-7,4)`` () = "2-1/4" == Rational(-7,4)
+    let ``2-1/4 is Rational(-7,4)`` () = "2-1/4" == Rational(7,4)
 
     [<Test>]
     let ``(1/2*1/2)-2 is Rational(-7,4)`` () = "(1/2*1/2)-2" == Rational(-7,4)

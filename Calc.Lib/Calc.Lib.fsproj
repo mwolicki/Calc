@@ -54,6 +54,8 @@
     <Compile Include="ExportAttribute.fs" />
     <Compile Include="Library1.fs" />
     <Content Include="packages.config" />
+    <None Include="Scripts\load-references-debug.fsx" />
+    <None Include="Scripts\load-project-debug.fsx" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ExcelFinancialFunctions">

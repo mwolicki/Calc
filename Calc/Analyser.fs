@@ -63,7 +63,7 @@ let operatorPrecedence =
       Concat, 10
       Minus, 15
       Multiply, 20
-      Divide, 20
+      Divide, 30
       //Power, 30
       Equals, 0
       Greater, 0
@@ -76,27 +76,19 @@ let operatorPrecedence =
 let rec applyOperatorPrecedence expr = 
     match expr with
     | Const _
-    | Reference _
-    | Negate _
-        -> expr
+    | Reference _ -> expr
+    | Negate (expr, ts) -> Negate(applyOperatorPrecedence expr, ts)
     | FunctionCall (name, ps, tokens) -> FunctionCall (name, ps |> List.map applyOperatorPrecedence, tokens)
     | Group (expr, tokens) -> Group (applyOperatorPrecedence expr, tokens)
     | OperatorCall (op, lhs, rhs, tokens) ->
         let lhs = applyOperatorPrecedence lhs
         let rhs = applyOperatorPrecedence rhs
         match lhs, rhs with
-        | OperatorCall (op', lhs', rhs', tokens'), _ ->
-            if operatorPrecedence.[op'] < operatorPrecedence.[op] then
-                OperatorCall (op', OperatorCall (op, lhs, lhs', tokens'), rhs', tokens)
-            else
-                OperatorCall (op, OperatorCall(op', lhs', rhs', tokens'), rhs, tokens)
-        | _, OperatorCall (op', lhs', rhs', tokens') ->
-            if operatorPrecedence.[op'] < operatorPrecedence.[op] then
-                OperatorCall (op', OperatorCall (op, lhs, lhs', tokens), rhs', tokens)
-            else
-                OperatorCall (op, lhs, OperatorCall(op', lhs', rhs', tokens'), tokens)
-
-        | _ -> expr
+        | OperatorCall (op_, lhs_, rhs_, tokens'), _ when operatorPrecedence.[op_] < operatorPrecedence.[op] ->
+                OperatorCall (op_, OperatorCall (op, lhs, lhs_, tokens'), rhs_, tokens)
+        | _, OperatorCall (op_, lhs_, rhs_, tokens') when operatorPrecedence.[op_] < operatorPrecedence.[op] ->
+                OperatorCall (op_, OperatorCall (op, lhs, lhs_, tokens), rhs_, tokens')
+        | _ -> OperatorCall (op, lhs, rhs, tokens)
 let rec (|IsFunctionCall|_|) (t: Token list) =
     let (|GetParams|_|) (t:Token list)  =
         let rec getParams (t:Token list) curr =
