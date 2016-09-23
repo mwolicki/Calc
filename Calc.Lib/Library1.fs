@@ -8,6 +8,16 @@ type Date =
     member date.Month = date.DateTime.Month
     member date.Day = date.DateTime.Day
 
+    static member (+) (d:Date, timeSpan:System.TimeSpan) = d.DateTime + timeSpan
+    static member (-) (d:Date, timeSpan:System.TimeSpan) = d.DateTime - timeSpan
+
+    static member op_GreaterThan (a:Date, b:Date) = a.DateTime > b.DateTime
+    static member op_GreaterThanOrEqual (a:Date, b:Date) = a.DateTime >= b.DateTime
+    static member op_LessThan(a:Date, b:Date) = a.DateTime < b.DateTime
+    static member op_LessThanOrEqual (a:Date, b:Date) = a.DateTime <= b.DateTime
+    static member op_Equality (a:Date, b:Date) = a.DateTime = b.DateTime
+    static member op_Inequality (a:Date, b:Date) = a.DateTime <> b.DateTime
+
     override date.ToString() = date.DateTime.ToShortDateString()
     override date.Equals o =
         match o with
@@ -337,6 +347,12 @@ type Rational =
     static member (-) (a:Rational, b:Rational) = Rational (a.a * b.b - b.a * a.b, a.b * b.b)
     static member (*) (a:Rational, b:Rational) = Rational (a.a * b.a, a.b * b.b)
     static member (/) (a:Rational, b:Rational) = Rational (a.a * b.b, a.b * b.a)
+    static member op_GreaterThan (a:Rational, b:Rational) = a.a * b.b > b.a * a.b
+    static member op_GreaterThanOrEqual (a:Rational, b:Rational) = a.a * b.b >= b.a * a.b
+    static member op_LessThan (a:Rational, b:Rational) = a.a * b.b < b.a * a.b
+    static member op_LessThanOrEqual (a:Rational, b:Rational) = a.a * b.b <= b.a * a.b
+    static member op_Equality (a:Rational, b:Rational) = a.Equals b
+    static member op_Inequality (a:Rational, b:Rational) = a.Equals b |> not
 
     static member private Normalize a b =
         let d = Lib.gcd a b
