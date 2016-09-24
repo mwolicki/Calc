@@ -77,7 +77,7 @@ let (|IsDateTimeLiteral|_|) (s, pos) =
         | _ -> None
     | _ -> None
 
-
+    
 let (|IsDateLiteral|_|) (s, pos) =
     match s with
     | IsRegex "^\[[0-9]{4}-[0-9]{2}-[0-9]{2}\]" (str, i) ->
@@ -85,6 +85,16 @@ let (|IsDateLiteral|_|) (s, pos) =
         | true,  dt -> DateLiteral (Date dt, pos, pos + uint32 i - 1u) |>Some
         | _ -> None
     | _ -> None
+
+
+let (|IsRomanLiteral|_|) (s, pos) =
+    match s with
+    | IsRegex "^\[[IVXLCDM]+\]" (str, i) ->
+        match RomanNum.TryParse (str.Substring(1, i-2)) with
+        | Some num -> NumberLiteral (Integer num, pos, pos + uint32 i - 1u) |>Some
+        | _ -> None
+    | _ -> None
+
 
 let (|IsStrLiteral|_|) (s, pos) =
     match s with
@@ -163,6 +173,7 @@ let toToken (text, pos) : Token option =
     | IsBoolLiteral t
     | IsDateTimeLiteral t
     | IsDateLiteral t
+    | IsRomanLiteral t
     | IsNumber t
     | IsStr t
     | IsStrLiteral t

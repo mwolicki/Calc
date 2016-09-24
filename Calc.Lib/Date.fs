@@ -13,7 +13,6 @@ type Date =
     static member (-) (a:Date, b:Date) = a.DateTime - b.DateTime
     static member (-) (a:Date, b:System.DateTime) = a.DateTime - b
 
-
     static member op_GreaterThan (a:Date, b:Date) = a.DateTime > b.DateTime
     static member op_GreaterThanOrEqual (a:Date, b:Date) = a.DateTime >= b.DateTime
     static member op_LessThan (a:Date, b:Date) = a.DateTime < b.DateTime

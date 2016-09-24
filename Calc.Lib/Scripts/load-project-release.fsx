@@ -2,5 +2,9 @@
 #I __SOURCE_DIRECTORY__
 #load "load-references-release.fsx"
 #load "../AssemblyInfo.fs"
+      "../RomanNumerals.fs"
       "../ExportAttribute.fs"
-      "../Library1.fs"
+      "../Date.fs"
+      "../IReferenceAccessor.fs"
+      "../Lib.fs"
+      "../Rational.fs"

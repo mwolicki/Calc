@@ -60,7 +60,7 @@ namespace Calc.Example.View
                 if (res.IsOK)
                 {
                     var p = (Core.Result<Delegate, string>.OK)res;
-                    CustomPropertyDesc.func = (Func<IReferenceAccessor, string>)p.Item;
+                    CustomPropertyDesc.func = ToFunc((dynamic)p.Item);
                     sw.Stop();
                     Errors = sw.Elapsed.ToString();
                     OpPropertyChanged("Lines");
@@ -82,6 +82,10 @@ namespace Calc.Example.View
                 isRecompiling = false;
             }
         }
+
+        private Func<IReferenceAccessor, string> ToFunc(Func<IReferenceAccessor, string> item)=> item;
+        private Func<IReferenceAccessor, string> ToFunc<T>(Func<IReferenceAccessor, T> item)
+            => x=> item(x).ToString();
 
         public string Errors
         {

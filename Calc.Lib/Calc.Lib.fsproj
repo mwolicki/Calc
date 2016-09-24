@@ -51,6 +51,7 @@
   <Import Project="$(FSharpTargetsPath)" />
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="RomanNumerals.fs" />
     <Compile Include="ExportAttribute.fs" />
     <Compile Include="Date.fs" />
     <Compile Include="IReferenceAccessor.fs" />

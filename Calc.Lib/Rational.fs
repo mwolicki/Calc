@@ -35,3 +35,4 @@ type Rational =
         if rat.b = 1 then sprintf "%i" rat.a
         elif rat.a = 0 then "0"
         else sprintf "%i/%i" rat.a rat.b
+

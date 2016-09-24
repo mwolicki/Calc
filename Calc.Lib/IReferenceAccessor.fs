@@ -8,4 +8,3 @@ type IReferenceAccessor =
     abstract member GetDateTime : string -> System.DateTime
     abstract member GetDate: string -> Date
 
-
