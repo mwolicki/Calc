@@ -52,10 +52,15 @@
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="ExportAttribute.fs" />
-    <Compile Include="Library1.fs" />
+    <Compile Include="Date.fs" />
+    <Compile Include="IReferenceAccessor.fs" />
+    <Compile Include="Lib.fs" />
+    <Compile Include="Rational.fs" />
     <Content Include="packages.config" />
     <None Include="Scripts\load-references-debug.fsx" />
     <None Include="Scripts\load-project-debug.fsx" />
+    <None Include="Scripts\load-references-release.fsx" />
+    <None Include="Scripts\load-project-release.fsx" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ExcelFinancialFunctions">
