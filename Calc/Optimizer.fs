@@ -7,7 +7,7 @@ open Eval
 
 [<AutoOpen>]
 module private Optimizer = 
-    let toConst (v:obj) e =
+    let toConst e (v:obj) =
         match e with
         | String -> TStr (v :?> string)
         | Decimal ->  (v :?> decimal)|> TDecimal
@@ -44,13 +44,12 @@ let optimizer (expr: TypedExpr) : TypedExpr =
             let ps = ps |> List.map optimizer'
             if ps |> Seq.forall isConst then
                 try
-                    let v = 
-                        match mi.IsStatic, ps with
-                        | false, this :: ps ->
-                            mi.Invoke(this, ps |> List.map getValue |> Array.ofList)
-                        | _ , ps -> 
-                            mi.Invoke(null, ps |> List.map getValue |> Array.ofList)
-                    toConst v returnType
+                    match mi.IsStatic, ps with
+                    | false, this :: ps ->
+                        mi.Invoke(this, ps |> List.map getValue |> Array.ofList)
+                    | _ , ps -> 
+                        mi.Invoke(null, ps |> List.map getValue |> Array.ofList)
+                    |> toConst returnType
                 with :? System.Reflection.TargetInvocationException ->
                     //TODO: Handle it somewhow - currently we will crash during runtime...
                     TFunctionCall(mi, returnType, ps)
@@ -80,9 +79,9 @@ let optimizer (expr: TypedExpr) : TypedExpr =
                 | Less -> lt
                 | LessOrEqual -> lte
                 |> fun f->f(getValue lhs, getValue rhs)
-                |> fun v -> toConst v opType
+                |> fun v -> toConst opType v
             else
-                TOperatorCall (op, optimizer' lhs, optimizer' rhs, opType)
+                TOperatorCall (op, lhs, rhs, opType)
         
         | TConvertType (currentType, newType, expr:TypedExpr) ->
             let expr = optimizer' expr
@@ -108,6 +107,12 @@ let optimizer (expr: TypedExpr) : TypedExpr =
                 | TConst (TDate d) -> System.DateTime(d.Year, d.Month, d.Day) |> (TDateTime>>TConst)
                 | _ -> TConvertType (currentType, newType, expr)
             | _ -> TConvertType (currentType, newType, expr)
-        | default' -> default'
-
+        | TCallCtor (ctor, params') ->
+            try
+                let vals = params' |> List.map optimizer'
+                if List.forall isConst vals then
+                    ctor.Invoke (vals |> List.map getValue |> Array.ofList)
+                    |> toConst (Type.ToType ctor.DeclaringType)
+                else expr
+            with _ -> expr //TODO: fix this temporarty hack.
     optimizer' expr
