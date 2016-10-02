@@ -309,7 +309,7 @@ module Tests =
         
         static member Version()=
             let dummyToken = [Tokenizer.WhiteSpace(0u,0u)]
-            let funcs = defaultFuncs |> Seq.filter(fun x->x.Key <> "NOW")
+            let funcs = defaultFuncs |> Seq.filter(fun x->x.Value.IsReferntionalTransparent)
             let availableReferences = Gen.oneof [ Gen.map (fun x-> Reference(x, dummyToken)) (refs |> Seq.map (fun kvp -> gen { return kvp.Key }) |> Gen.oneof) ]
             let availableFuncs = funcs |> Seq.map(fun kvp ->  kvp.Key, kvp.Value.Parameters.Length) |> Map.ofSeq
             let aFuncs = funcs |> Seq.map (fun kvp -> gen { return kvp.Key }) |> Gen.oneof
