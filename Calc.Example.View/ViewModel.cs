@@ -200,5 +200,10 @@ namespace Calc.Example.View
         public Date GetDate(string value) => new Date(2,2,2);
 
         public DateTime GetDateTime(string value) => DateTime.Now;
+
+        public a Get<a>(string value)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

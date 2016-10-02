@@ -7,4 +7,5 @@ type IReferenceAccessor =
     abstract member GetDecimal : string -> decimal
     abstract member GetDateTime : string -> System.DateTime
     abstract member GetDate: string -> Date
+    abstract member Get: string -> 'a
 

@@ -31,7 +31,8 @@ module Tests =
           member __.GetString _ = "text"
           member __.GetDecimal _ = 2m
           member __.GetDate _ = Calc.Lib.Date(1,2,3)
-          member __.GetDateTime _ = System.DateTime.Now }
+          member __.GetDateTime _ = System.DateTime.Now
+          member __.Get<'a> _ = Unchecked.defaultof<'a> }
 
     let compileAndRun<'a> s = 
         Compile.compile'<'a> defaultFuncs refs s

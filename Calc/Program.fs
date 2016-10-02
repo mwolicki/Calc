@@ -24,8 +24,8 @@ module Compile
         |> Array.choose (function :? MethodInfo as x -> Some x | _ -> None)
         |> Array.map (fun x->x, x.GetCustomAttribute(typeof<ExportAttribute>))
         |> Array.filter (snd >> isNotNull)
-        |> Array.map (fun (f, att) -> (att :?> ExportAttribute).Name, f)
-        |> Array.map (fun (name, f)-> { Name = name; MethodInfo = f}, f)
+        |> Array.map (fun (f, att) -> (att :?> ExportAttribute), f)
+        |> Array.map (fun (att, f)-> { Name = att.Name; MethodInfo = f; IsReferntionalTransparent = att.IsReferentialTransparent}, f)
 
 
     let defaultFuncs =

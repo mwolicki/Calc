@@ -39,10 +39,10 @@ let optimizer (expr: TypedExpr) : TypedExpr =
         match expr with
         | TReference (_)
         | TConst _ -> expr
-        | TFunctionCall (_, UserDefined _, _) -> expr
-        | TFunctionCall (mi, returnType, ps) ->
+        | TFunctionCall (_, UserDefined _, _, _) -> expr
+        | TFunctionCall (mi, returnType, ps, referntionalTransparent) ->
             let ps = ps |> List.map optimizer'
-            if ps |> Seq.forall isConst then
+            if referntionalTransparent && ps |> Seq.forall isConst then
                 try
                     match mi.IsStatic, ps with
                     | false, this :: ps ->
@@ -52,9 +52,9 @@ let optimizer (expr: TypedExpr) : TypedExpr =
                     |> toConst returnType
                 with :? System.Reflection.TargetInvocationException ->
                     //TODO: Handle it somewhow - currently we will crash during runtime...
-                    TFunctionCall(mi, returnType, ps)
+                    TFunctionCall(mi, returnType, ps, referntionalTransparent)
             else
-                TFunctionCall(mi, returnType, ps)
+                TFunctionCall(mi, returnType, ps, referntionalTransparent)
         | TNegate expr ->
             match optimizer' expr with
             | TConst (TInteger x) -> TInteger -x |> TConst 

@@ -1,7 +1,7 @@
 ﻿namespace Calc.Lib
 
-open System.Runtime.InteropServices
-
-type ExportAttribute(name) =
+type ExportAttribute(name, referentialTransparent) =
     inherit System.Attribute () 
     member __.Name : string = name
+    member __.IsReferentialTransparent = referentialTransparent
+    new (name) = ExportAttribute(name, true)

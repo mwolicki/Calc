@@ -51,7 +51,7 @@ with
 type TypedExpr = 
 | TConst of TConst
 | TCallCtor of ctorInfo:ConstructorInfo * TypedExpr list
-| TFunctionCall of methodInfo:MethodInfo * returnType:Type * TypedExpr list
+| TFunctionCall of methodInfo:MethodInfo * returnType:Type * TypedExpr list * referntionalTransparent:bool
 | TNegate of TypedExpr
 | TOperatorCall of operator * lhs:TypedExpr * rhs:TypedExpr * opType : Type
 | TReference of name:RefName * refType:Type
@@ -72,9 +72,11 @@ type FunName = string
 type RefDef =
     { Name : RefName
       Type : Type }
+
 type FunDef = 
     { Name : FunName
-      MethodInfo : System.Reflection.MethodInfo }
+      MethodInfo : System.Reflection.MethodInfo
+      IsReferntionalTransparent : bool }
 with
     member def.ReturnType = def.MethodInfo.ReturnType |> FunDef.GetType
     member def.Parameters = 
@@ -139,7 +141,7 @@ let getFunctionCall op (lhs:TypedExpr) (rhs:TypedExpr) =
     | Less, MethodInfo "op_LessThan" mi 
     | LessOrEqual, MethodInfo "op_LessThanOrEqual" mi 
     | GreaterOrEqual, MethodInfo "op_GreaterThanOrEqual" mi 
-        -> TFunctionCall (mi, Type.ToType mi.ReturnType, [lhs; rhs]) |> OK
+        -> TFunctionCall (mi, Type.ToType mi.ReturnType, [lhs; rhs], true) |> OK
     | op, type' -> sprintf "Unsupported operator %A for type %A" op type' |> Error
 
 
@@ -180,7 +182,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
             | None -> 
                 match fs.TryFind refName with
                 | Some def when def.MethodInfo.GetParameters().Length = 0 ->
-                    TFunctionCall (def.MethodInfo, def.ReturnType, []) |> OK
+                    TFunctionCall (def.MethodInfo, def.ReturnType, [], def.IsReferntionalTransparent) |> OK
                 | _ -> "unknown reference " + refName |> Error
         | Group (e, _) -> toTypedSyntaxTree' e
         | Negate (e, _) -> 
@@ -190,7 +192,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
             | OK expr when expr.Type = Integer || expr.Type = Boolean
                 -> TNegate expr |> OK
             | OK expr when expr.Type = Decimal && mi <> null
-                -> TFunctionCall (mi, Decimal, [expr])  |> OK
+                -> TFunctionCall (mi, Decimal, [expr], true)  |> OK
             | Error _ as e -> e
             | OK expr -> sprintf "Negation of type %A is not supported" expr.Type |> Error
         | FunctionCall (name, ps, _) when name <> null ->
@@ -217,7 +219,7 @@ let toTypedSyntaxTree (fs:Map<FunName, FunDef>) (refs:Map<RefName, RefDef>) expr
                     if errors.Length > 0 then
                         errors |> List.head |> Result.unwrapError |> Error
                     else
-                        TFunctionCall (def.MethodInfo, def.ReturnType, params' |> List.map Result.unwrap) |> OK
+                        TFunctionCall (def.MethodInfo, def.ReturnType, params' |> List.map Result.unwrap, def.IsReferntionalTransparent) |> OK
         | Reference (_)
         | FunctionCall (_) ->
             sprintf "Unuported element %A " expr |>  Error 

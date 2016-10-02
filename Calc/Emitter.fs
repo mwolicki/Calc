@@ -121,7 +121,7 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
             il.Emit OpCodes.Ldarg_0
             il.Emit(OpCodes.Ldstr, name)
             il.EmitCall(OpCodes.Callvirt, methodInfo, null)
-        | TFunctionCall (mi, _, params') -> 
+        | TFunctionCall (mi, _, params', _) -> 
             params' |> List.iter ilBuild
             il.EmitCall(OpCodes.Call, mi, null)
         | TConvertType (currentType, newType, expr) ->
@@ -146,7 +146,11 @@ let generateMethod (fs:Map<FunName, FunDef>) (expr:TypedExpr) (il:ILGenerator) =
                 let mi = typeof<Rational>.GetMethod ("GetValue", BindingFlags.Instance ||| BindingFlags.Public, null, [||], null)
                 il.EmitCall(OpCodes.Call, mi, null)
             | Date, DateTime ->
-                failwith "TODO: add support for conversion between Date & DateTime"
+                let local = il.DeclareLocal typeof<Date>
+                il.Emit(OpCodes.Stloc, local);
+                il.Emit(OpCodes.Ldloca, local);
+                let mi = typeof<Date>.GetMethod ("GetValue", BindingFlags.Instance ||| BindingFlags.Public, null, [||], null)
+                il.EmitCall(OpCodes.Call, mi, null)
             | _ -> failwithf "Conversion between %A & %A is not supported" currentType newType
 
         | _

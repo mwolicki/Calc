@@ -136,7 +136,7 @@ let eval (expr:TypedExpr) (accessor:IReferenceAccessor) =
             | Date, DateTime -> v :?> Date |> (fun x->System.DateTime(x.Year, x.Month, x.Day)) |> box
             | _ -> failwithf "conversion between %A and %A is not supported" currentType toType
             
-        | TFunctionCall (mi, _, es) ->
+        | TFunctionCall (mi, _, es, _) ->
             let es = es |> List.map eval'
             try
                 match mi.IsStatic, es with

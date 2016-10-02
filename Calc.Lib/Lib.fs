@@ -100,11 +100,16 @@ module Lib =
     [<Export("ISNULLOREMPTY")>]
     let isnullorempty a = String.IsNullOrEmpty a
     
-    [<Export("NOW")>]
+    [<Export("NOW", false)>]
     let now () = System.DateTime.Now
     
-    [<Export("TODAY")>]
+    [<Export("TODAY", false)>]
     let time () = System.DateTime.Now |> Date
+
+    let private rnd = new System.Random()
+
+    [<Export("RANDOM", false)>]
+    let random () = rnd.Next()
 
 module Financial = 
     open Excel.FinancialFunctions
