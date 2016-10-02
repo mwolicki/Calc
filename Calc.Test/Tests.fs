@@ -235,9 +235,14 @@ module Tests =
     [<Test>] 
     let ``check int math operations`` () =
         let test (a:int) (op:MathOps) (b:int) =
-            let actual = catch (fun () -> sprintf "%i %O %i" a op.Str b |> compileAndRun<int>)
-            let expected = catch (fun () -> op.Calc (a, b))
-            actual = expected
+            if op = MathOps.Div then
+                let actual = sprintf "%i %O %i" a op.Str b |> compileAndRun<Rational>
+                let expected = Rational(a,b)
+                actual = expected
+            else
+                let actual = catch (fun () -> sprintf "%i %O %i" a op.Str b |> compileAndRun<int>)
+                let expected = catch (fun () -> op.Calc (a, b))
+                actual = expected
         Check.QuickThrowOnFailure test
 
     [<Test>] 
