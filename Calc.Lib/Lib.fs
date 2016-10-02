@@ -106,10 +106,17 @@ module Lib =
     [<Export("TODAY", false)>]
     let time () = System.DateTime.Now |> Date
 
-    let private rnd = new System.Random()
+    type Rnd () =
+        [<System.ThreadStatic; DefaultValueAttribute>]
+        static val mutable private rnd : System.Random
+        static member Random 
+            with get () = 
+                if isNull Rnd.rnd then
+                    Rnd.rnd<-System.Random()
+                Rnd.rnd
 
     [<Export("RANDOM", false)>]
-    let random () = rnd.Next()
+    let random () = Rnd.Random.Next()
 
 module Financial = 
     open Excel.FinancialFunctions
