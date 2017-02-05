@@ -371,7 +371,7 @@ module Tests =
             Assert.AreEqual(expected, actual)
 
     [<Test>] 
-    let ``compere results with oracle`` () =
+    let ``compare results with oracle`` () =
 
         let test (expr:TypedExpr) fs =
             match expr.Type with
